@@ -19,12 +19,13 @@ import {
     SidebarMenuSubButton,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import Logo from "@/components/logo"
 import { signOutAction } from "@/app/actions"
 import { useRouter, usePathname } from "next/navigation"
-import { Component, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client"
 // TODO: use router push to navigate to the pages instead of using the Link component
 
@@ -41,7 +42,7 @@ interface OrderStatus {
 }
 
 export function AppSidebar({ children }: { children?: React.ReactNode }) {
-    const { setOpen, setOpenMobile, isMobile } = useSidebar()
+    const { setOpenMobile } = useSidebar()
     const router = useRouter()
     const pathname = usePathname();
     const [statuses, setStatuses] = useState<OrderStatus[]>([])
@@ -96,7 +97,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild isActive={pathname === "/clienti"}>
-                                    <Link href="/clienti">
+                                    <Link href="/clienti" onClick={() => handleMenuItemClick("/clienti")}>
                                         <Users />
                                         <span>Clienti</span>
                                     </Link>
@@ -104,7 +105,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild isActive={pathname === "/servicii"}>
-                                    <Link href="/servicii">
+                                    <Link href="/servicii" onClick={() => handleMenuItemClick("/servicii")}>
                                         <Shirt />
                                         <span>Servicii</span>
                                     </Link>
@@ -112,7 +113,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild isActive={pathname === "/reduceri"}>
-                                    <Link href="/reduceri">
+                                    <Link href="/reduceri" onClick={() => handleMenuItemClick("/reduceri")}>
                                         <Percent />
                                         <span>Reduceri</span>
                                     </Link>
@@ -120,7 +121,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild isActive={pathname === "/status-comenzi"}>
-                                    <Link href="/status-comenzi">
+                                    <Link href="/status-comenzi" onClick={() => handleMenuItemClick("/status-comenzi")}>
                                         <Settings />
                                         <span>Status comenzi</span>
                                     </Link>
@@ -163,16 +164,41 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
     )
 }
 
+type TailwindColorVariants = {
+    text: string
+    bg: string
+    light: string
+    dark: string
+}
+
+function getTailwindColorVariants(color: string): TailwindColorVariants {
+    return {
+        text: `text-${color}-700`,
+        bg: `bg-${color}-100`,
+        light: `bg-${color}-50`,
+        dark: `bg-${color}-900`
+    }
+}
+
 function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick }: { icon: React.ReactNode, route: string, label: string, badge?: number, color: string, handleMenuItemClick: (route: string) => void }) {
+    const pathname = usePathname();
+    const isActive = pathname === route;
+    const { light, dark } = getTailwindColorVariants(color);
     return (
-        <SidebarMenuSubItem >
-            <SidebarMenuSubButton asChild className={color}>
+        <SidebarMenuSubItem>
+            <SidebarMenuSubButton
+                asChild
+                isActive={isActive}
+            >
                 <Link href={route} onClick={() => handleMenuItemClick(route)}>
-                    {icon}
-                    <span>{label}</span>
-                    {typeof badge === 'number' && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
+                    {/* {icon} */}
+                    <Badge className={`text-xs bg-${color}-500`}>{label}</Badge>
+                    <SidebarMenuBadge>
+                        <Badge className={`text-xs bg-${color}-500`}>{badge}</Badge>
+
+                    </SidebarMenuBadge>
                 </Link>
             </SidebarMenuSubButton>
-        </SidebarMenuSubItem>
-    )
+        </SidebarMenuSubItem >
+    );
 }

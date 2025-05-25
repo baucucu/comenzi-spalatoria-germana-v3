@@ -387,7 +387,7 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
                                         <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <Badge className={`${status.color} text-white flex-shrink-0`}>{status.label}</Badge>
+                                                <Badge className={`bg-${status.color}-500 text-white flex-shrink-0`}>{status.label}</Badge>
                                                 {status.status_final && (
                                                     <Badge variant="outline" className="text-xs flex-shrink-0">
                                                         Final
