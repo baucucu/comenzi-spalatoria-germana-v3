@@ -23,13 +23,37 @@ import Link from "next/link"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import Logo from "@/components/logo"
 import { signOutAction } from "@/app/actions"
-import { useRouter } from "next/navigation"
-import { Component } from "react";
+import { useRouter, usePathname } from "next/navigation"
+import { Component, useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client"
 // TODO: use router push to navigate to the pages instead of using the Link component
+
+// OrderStatus type for sidebar usage
+interface OrderStatus {
+    id: number
+    name: string
+    label: string
+    color: string
+    position: number
+    created_at: string
+    updated_at: string
+    status_final: boolean
+}
 
 export function AppSidebar({ children }: { children?: React.ReactNode }) {
     const { setOpen, setOpenMobile, isMobile } = useSidebar()
     const router = useRouter()
+    const pathname = usePathname();
+    const [statuses, setStatuses] = useState<OrderStatus[]>([])
+
+    useEffect(() => {
+        const fetchStatuses = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase.from("order_statuses").select("*").order("position")
+            if (!error && data) setStatuses(data)
+        }
+        fetchStatuses()
+    }, [])
 
     // Handler to close sidebar
     function handleMenuItemClick(route: string) {
@@ -48,35 +72,30 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={pathname === "/comenzi"}>
                                     <Link href="/comenzi" onClick={() => handleMenuItemClick("/comenzi")}>
                                         <WashingMachine />
                                         <span>Comenzi</span>
                                     </Link>
                                 </SidebarMenuButton>
                                 <SidebarMenuSub>
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton asChild>
-                                            <Link href="/comenzi" onClick={() => handleMenuItemClick("/comenzi")}>
-                                                <WashingMachine />
-                                                <span>Noi</span>
-                                                <SidebarMenuBadge>24</SidebarMenuBadge>
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton asChild>
-                                            <Link href="/comenzi">
-                                                <WashingMachine />
-                                                <span>In lucru</span>
-                                                <SidebarMenuBadge>12</SidebarMenuBadge>
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
+                                    {statuses.map((status) => {
+                                        return (
+                                            <ComenziMenuItem
+                                                key={status.id}
+                                                icon={<WashingMachine />}
+                                                route={`/comenzi?status=${status.name}`}
+                                                label={status.label}
+                                                badge={0}
+                                                color={status.color}
+                                                handleMenuItemClick={handleMenuItemClick}
+                                            />
+                                        )
+                                    })}
                                 </SidebarMenuSub>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={pathname === "/clienti"}>
                                     <Link href="/clienti">
                                         <Users />
                                         <span>Clienti</span>
@@ -84,7 +103,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={pathname === "/servicii"}>
                                     <Link href="/servicii">
                                         <Shirt />
                                         <span>Servicii</span>
@@ -92,7 +111,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={pathname === "/reduceri"}>
                                     <Link href="/reduceri">
                                         <Percent />
                                         <span>Reduceri</span>
@@ -100,7 +119,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={pathname === "/status-comenzi"}>
                                     <Link href="/status-comenzi">
                                         <Settings />
                                         <span>Status comenzi</span>
@@ -144,14 +163,14 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
     )
 }
 
-function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick }: { icon: React.ReactNode, route: string, label: string, badge: number, color: string, handleMenuItemClick: (route: string) => void }) {
+function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick }: { icon: React.ReactNode, route: string, label: string, badge?: number, color: string, handleMenuItemClick: (route: string) => void }) {
     return (
-        <SidebarMenuSubItem className={`${color}`}>
-            <SidebarMenuSubButton asChild>
+        <SidebarMenuSubItem >
+            <SidebarMenuSubButton asChild className={color}>
                 <Link href={route} onClick={() => handleMenuItemClick(route)}>
                     {icon}
                     <span>{label}</span>
-                    <SidebarMenuBadge>{badge}</SidebarMenuBadge>
+                    {typeof badge === 'number' && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
                 </Link>
             </SidebarMenuSubButton>
         </SidebarMenuSubItem>
