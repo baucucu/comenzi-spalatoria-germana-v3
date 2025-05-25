@@ -52,19 +52,21 @@ export default function RootLayout({
                 {children}
               </div>
               {/* make footer sticky */}
-              <footer className="w-full flex flex-row items-center justify-between border-t mx-auto text-center text-xs px-4 h-14 md:h-16 sticky bottom-0 bg-background z-20">
-                <p className="m-0">
-                  Powered by{" "}
-                  <a
-                    href="https://appy.agency.com/?utm_source=spalatoria-germana&utm_medium=comenzi-app&utm_term=footer-link"
-                    target="_blank"
-                    className="font-bold hover:underline inline-block py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    rel="noreferrer"
-                  >
-                    appy.agency
-                  </a>
-                </p>
-                <ThemeSwitcher />
+              <footer className="w-full border-t sticky bottom-0 bg-background z-20">
+                <div className="w-full max-w-full md:max-w-5xl flex justify-between items-center p-3 md:px-5 text-xs mx-auto">
+                  <p className="m-0">
+                    Powered by{" "}
+                    <a
+                      href="https://appy.agency.com/?utm_source=spalatoria-germana&utm_medium=comenzi-app&utm_term=footer-link"
+                      target="_blank"
+                      className="font-bold hover:underline inline-block py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      rel="noreferrer"
+                    >
+                      appy.agency
+                    </a>
+                  </p>
+                  <ThemeSwitcher />
+                </div>
               </footer>
             </div>
           </main>
