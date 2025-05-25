@@ -1,4 +1,6 @@
-import { WashingMachine, Home, Settings, LogOut, Users, Shirt, ShoppingBag, Truck, Percent, List, CheckCircle } from "lucide-react"
+"use client";
+
+import { WashingMachine, Settings, LogOut, Users, Shirt, Percent, Icon } from "lucide-react"
 
 import {
     Sidebar,
@@ -10,17 +12,30 @@ import {
     SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
+    SidebarMenuBadge,
     SidebarMenuItem,
     SidebarMenuSub,
     SidebarMenuSubItem,
     SidebarMenuSubButton,
+    useSidebar,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import Logo from "@/components/logo"
 import { signOutAction } from "@/app/actions"
+import { useRouter } from "next/navigation"
+import { Component } from "react";
+// TODO: use router push to navigate to the pages instead of using the Link component
 
 export function AppSidebar({ children }: { children?: React.ReactNode }) {
+    const { setOpen, setOpenMobile, isMobile } = useSidebar()
+    const router = useRouter()
+
+    // Handler to close sidebar
+    function handleMenuItemClick(route: string) {
+        setOpenMobile(false)
+        router.push(route)
+    }
     return (
         <Sidebar>
             <SidebarHeader className="flex border-b">
@@ -30,12 +45,11 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
             </SidebarHeader>
             <SidebarContent className="flex flex-col justify-between">
                 <SidebarGroup>
-                    {/* <SidebarGroupLabel>Application</SidebarGroupLabel> */}
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild>
-                                    <Link href="/comenzi">
+                                    <Link href="/comenzi" onClick={() => handleMenuItemClick("/comenzi")}>
                                         <WashingMachine />
                                         <span>Comenzi</span>
                                     </Link>
@@ -43,9 +57,10 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                 <SidebarMenuSub>
                                     <SidebarMenuSubItem>
                                         <SidebarMenuSubButton asChild>
-                                            <Link href="/comenzi">
+                                            <Link href="/comenzi" onClick={() => handleMenuItemClick("/comenzi")}>
                                                 <WashingMachine />
                                                 <span>Noi</span>
+                                                <SidebarMenuBadge>24</SidebarMenuBadge>
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
@@ -54,6 +69,7 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                             <Link href="/comenzi">
                                                 <WashingMachine />
                                                 <span>In lucru</span>
+                                                <SidebarMenuBadge>12</SidebarMenuBadge>
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
@@ -125,5 +141,19 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
 
             </SidebarFooter >
         </Sidebar >
+    )
+}
+
+function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick }: { icon: React.ReactNode, route: string, label: string, badge: number, color: string, handleMenuItemClick: (route: string) => void }) {
+    return (
+        <SidebarMenuSubItem className={`${color}`}>
+            <SidebarMenuSubButton asChild>
+                <Link href={route} onClick={() => handleMenuItemClick(route)}>
+                    {icon}
+                    <span>{label}</span>
+                    <SidebarMenuBadge>{badge}</SidebarMenuBadge>
+                </Link>
+            </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
     )
 }

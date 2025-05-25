@@ -1,7 +1,14 @@
-export default function StatusComenzi() {
+import { createClient } from "@/utils/supabase/client"
+import OrderStatusManager from "@/components/order-status-manager"
+
+export default async function StatusComenzi() {
+    const supabase = createClient()
+    const { data: statusComenzi, error } = await supabase.from("order_statuses").select("*")
+    if (error) {
+        console.error(error)
+    }
+    console.log({ statusComenzi })
     return (
-        <div>
-            <h1>Status comenzi</h1>
-        </div>
+        <OrderStatusManager statusComenzi={statusComenzi} />
     )
 }
