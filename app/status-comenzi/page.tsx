@@ -7,7 +7,6 @@ export default async function StatusComenzi() {
     if (error) {
         console.error(error)
     }
-    console.log({ statusComenzi })
     return (
         <OrderStatusManager statusComenzi={statusComenzi} />
     )

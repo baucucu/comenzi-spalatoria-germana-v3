@@ -24,7 +24,7 @@ import Link from "next/link"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import Logo from "@/components/logo"
 import { signOutAction } from "@/app/actions"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client"
 // TODO: use router push to navigate to the pages instead of using the Link component
@@ -84,8 +84,8 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                         return (
                                             <ComenziMenuItem
                                                 key={status.id}
-                                                icon={<WashingMachine />}
                                                 route={`/comenzi?status=${status.name}`}
+                                                status={status.name}
                                                 label={status.label}
                                                 badge={0}
                                                 color={status.color}
@@ -164,26 +164,28 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
     )
 }
 
-type TailwindColorVariants = {
-    text: string
-    bg: string
-    light: string
-    dark: string
-}
+function ComenziMenuItem({ route, status, label, badge, color, handleMenuItemClick }: { route: string, status: string, label: string, badge?: number, color: string, handleMenuItemClick: (route: string) => void }) {
+    const searchParams = useSearchParams()
+    const activeStatus = searchParams.get("status")
+    const isActive = status === activeStatus
 
-function getTailwindColorVariants(color: string): TailwindColorVariants {
-    return {
-        text: `text-${color}-700`,
-        bg: `bg-${color}-100`,
-        light: `bg-${color}-50`,
-        dark: `bg-${color}-900`
-    }
-}
-
-function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick }: { icon: React.ReactNode, route: string, label: string, badge?: number, color: string, handleMenuItemClick: (route: string) => void }) {
-    const pathname = usePathname();
-    const isActive = pathname === route;
-    const { light, dark } = getTailwindColorVariants(color);
+    // count the number of orders for the status
+    const [ordersCount, setOrdersCount] = useState(0)
+    useEffect(() => {
+        async function countItems() {
+            const supabase = createClient()
+            const { count, error } = await supabase
+                .from('orders')
+                .select('*', { count: 'exact', head: true })  // head: true = don't return rows
+                .eq('status', status)
+            if (error) {
+                console.error('Error getting count:', error);
+            } else {
+                setOrdersCount(count)
+            }
+        }
+        countItems()
+    }, [status])
     return (
         <SidebarMenuSubItem>
             <SidebarMenuSubButton
@@ -191,10 +193,9 @@ function ComenziMenuItem({ icon, route, label, badge, color, handleMenuItemClick
                 isActive={isActive}
             >
                 <Link href={route} onClick={() => handleMenuItemClick(route)}>
-                    {/* {icon} */}
                     <Badge className={`text-xs bg-${color}-500`}>{label}</Badge>
                     <SidebarMenuBadge>
-                        <Badge className={`text-xs bg-${color}-500`}>{badge}</Badge>
+                        <Badge className={`text-xs bg-${color}-500`}>{ordersCount}</Badge>
 
                     </SidebarMenuBadge>
                 </Link>
