@@ -1,4 +1,3 @@
-import DeployButton from "@/components/deploy-button";
 import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -8,6 +7,10 @@ import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import "./globals.css";
 import Logo from "@/components/logo";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import { createClient } from "@/utils/supabase/server";
+
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -23,11 +26,16 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
@@ -37,39 +45,18 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen flex flex-col items-center">
-            <div className="flex-1 w-full flex flex-col gap-8 md:gap-20 items-center">
-              {/* make nav sticky */}
-              <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14 md:h-16 sticky top-0 bg-background z-20">
-                <div className="w-full max-w-full md:max-w-5xl flex justify-between items-center p-3 md:px-5 text-sm">
-                  <div className="flex gap-3 md:gap-5 items-center font-semibold">
-                    <Link href={"/"}><Logo /></Link>
-                  </div>
-                  {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
-                </div>
-              </nav>
-              <div className="flex flex-col flex-1 gap-8 md:gap-20 w-full max-w-full md:max-w-5xl p-3 md:p-5">
-                {children}
+          <SidebarProvider style={{
+            "--sidebar-width": "20rem",
+            "--sidebar-width-mobile": "20rem",
+          }}>
+            {user && <AppSidebar />}
+            <main className="min-h-screen w-full relative">
+              <div className="absolute top-4 left-4 z-50">
+                {user && <SidebarTrigger />}
               </div>
-              {/* make footer sticky */}
-              <footer className="w-full border-t sticky bottom-0 bg-background z-20">
-                <div className="w-full max-w-full md:max-w-5xl flex justify-between items-center p-3 md:px-5 text-xs mx-auto">
-                  <p className="m-0">
-                    Powered by{" "}
-                    <a
-                      href="https://appy.agency.com/?utm_source=spalatoria-germana&utm_medium=comenzi-app&utm_term=footer-link"
-                      target="_blank"
-                      className="font-bold hover:underline inline-block py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      rel="noreferrer"
-                    >
-                      appy.agency
-                    </a>
-                  </p>
-                  <ThemeSwitcher />
-                </div>
-              </footer>
-            </div>
-          </main>
+              {children}
+            </main>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
