@@ -175,7 +175,7 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                     {discounts.length === 0 ? (
                         <div className="text-center py-12 text-slate-500">Nu există reduceri. Adăugați prima reducere!</div>
                     ) : (
-                        <Table className="border-separate border-spacing-0">
+                        <Table >
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="text-slate-600">Denumire</TableHead>
