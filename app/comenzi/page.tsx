@@ -1,4 +1,4 @@
-export default function Comenzi() {
+export default function ComenziPage() {
     return (
         <div>
             <h1>Comenzi</h1>
