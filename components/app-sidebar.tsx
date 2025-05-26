@@ -1,6 +1,6 @@
 "use client";
 
-import { WashingMachine, Settings, LogOut, Users, Shirt, Percent, Icon } from "lucide-react"
+import { WashingMachine, Settings, LogOut, Users, Shirt, Percent, UserPen } from "lucide-react"
 
 import {
     Sidebar,
@@ -124,6 +124,14 @@ export function AppSidebar({ children }: { children?: React.ReactNode }) {
                                     <Link href="/status-comenzi" onClick={() => handleMenuItemClick("/status-comenzi")}>
                                         <Settings />
                                         <span>Status comenzi</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === "/utilizatori"}>
+                                    <Link href="/utilizatori" onClick={() => handleMenuItemClick("/utilizatori")}>
+                                        <UserPen />
+                                        <span>Utilizatori</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
