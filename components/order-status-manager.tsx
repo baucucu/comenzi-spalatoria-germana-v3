@@ -299,14 +299,14 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
     }
 
     return (
-        <div className="h-screen w-full max-w-4xl mx-auto p-4 sm:p-6 flex flex-col">
-            <Card className="flex flex-col h-full">
-                <CardHeader className="pb-4">
+        <div className="container mx-auto p-6">
+            <Card>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <CardTitle className="text-lg sm:text-xl">Status Comenzi</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">Status Comenzi</CardTitle>
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button onClick={resetForm} className="w-full sm:w-auto">
+                                <Button onClick={resetForm} className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
                                     <Plus className="w-4 h-4 mr-2" />
                                     <span className="sm:inline">Adaugă Status</span>
                                 </Button>

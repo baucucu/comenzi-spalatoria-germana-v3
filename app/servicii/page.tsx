@@ -42,11 +42,11 @@ export default async function Comenzi() {
     const [categories, serviceTypes] = await Promise.all([getCategories(), getServiceTypes()])
 
     return (
-        <div className="container mx-auto py-4 px-4">
+        <div className="container mx-auto p-6">
             <Card>
                 <CardHeader className="pb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <CardTitle className="text-xl">Gestionare Servicii</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">Articole si servicii</CardTitle>
                         <ServiceForm categories={categories} serviceTypes={serviceTypes} mode="create" />
                     </div>
                 </CardHeader>
