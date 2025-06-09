@@ -122,20 +122,20 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                                 </DialogDescription>
                             </DialogHeader>
                             <form action={handleCreateSubmit}>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-1">
                                         <Label htmlFor="add-name" className="text-right">
                                             Denumire
                                         </Label>
                                         <Input
                                             id="add-name"
                                             name="name"
-                                            className="col-span-3"
+                                            className=""
                                             placeholder="Introduceți numele reducerii"
                                             required
                                         />
                                     </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
+                                    <div className="space-y-1">
                                         <Label htmlFor="add-value" className="text-right">
                                             Procent (%)
                                         </Label>
@@ -146,7 +146,7 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                                             min="0"
                                             max="100"
                                             defaultValue="0"
-                                            className="col-span-3"
+                                            className=""
                                             placeholder="0"
                                         />
                                     </div>
@@ -227,8 +227,8 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                         }}
                     >
                         <input type="hidden" name="id" value={editingDiscount?.id} />
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-1">
                                 <Label htmlFor="edit-name" className="text-right">
                                     Denumire
                                 </Label>
@@ -236,11 +236,11 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                                     id="edit-name"
                                     name="name"
                                     defaultValue={editingDiscount?.name ?? ''}
-                                    className="col-span-3"
+                                    className=""
                                     required
                                 />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
+                            <div className="space-y-1">
                                 <Label htmlFor="edit-value" className="text-right">
                                     Procent (%)
                                 </Label>
@@ -251,7 +251,7 @@ export default function DiscountManagement({ initialDiscounts }: DiscountManagem
                                     min="0"
                                     max="100"
                                     defaultValue={editingDiscount?.value ?? 0}
-                                    className="col-span-3"
+                                    className=""
                                 />
                             </div>
                         </div>
