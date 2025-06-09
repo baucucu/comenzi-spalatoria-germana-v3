@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { ClientsTable } from "./clients-table";
 import { ClientForm } from "./client-form";
 import { createClient } from "@/utils/supabase/client";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 interface Client {
     id: string;
@@ -29,7 +30,10 @@ interface ClientManagementProps {
 export default function ClientManagement({ initialClients, searchTerm }: ClientManagementProps) {
     const [clients, setClients] = useState<Client[]>(initialClients);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editingClient, setEditingClient] = useState<Client | null>(null);
+    const [deletingClient, setDeletingClient] = useState<Client | null>(null);
     const [loading, setLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
     const searchParams = useSearchParams();
 
     // Helper to fetch the current page of clients
@@ -84,6 +88,24 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
 
     const handleAddClient = () => setIsAddModalOpen(true);
     const handleCancelAdd = () => setIsAddModalOpen(false);
+    const handleEdit = (client: Client) => setEditingClient(client);
+    const handleEditClose = () => setEditingClient(null);
+    const handleDelete = (client: Client) => setDeletingClient(client);
+    const handleDeleteClose = () => setDeletingClient(null);
+
+    const handleEditSuccess = () => {
+        setEditingClient(null);
+        fetchClients();
+    };
+    const handleDeleteConfirm = async () => {
+        if (!deletingClient) return;
+        setDeleteLoading(true);
+        const supabase = createClient();
+        await supabase.from("customers").delete().eq("id", deletingClient.id);
+        setDeleteLoading(false);
+        setDeletingClient(null);
+        fetchClients();
+    };
 
     return (
         <Card>
@@ -105,12 +127,47 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
                         />
                     </DialogContent>
                 </Dialog>
+                {/* Edit Client Dialog */}
+                <Dialog open={!!editingClient} onOpenChange={v => !v && setEditingClient(null)}>
+                    <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Editează Client</DialogTitle>
+                        </DialogHeader>
+                        {editingClient && (
+                            <ClientForm
+                                mode="edit"
+                                initialValues={editingClient}
+                                onSuccess={handleEditSuccess}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={!!deletingClient} onOpenChange={v => !v && setDeletingClient(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Șterge clientul?</AlertDialogTitle>
+                        </AlertDialogHeader>
+                        <div className="py-2">Ești sigur că vrei să ștergi clientul <b>{deletingClient?.nume} {deletingClient?.prenume}</b>? Această acțiune nu poate fi anulată.</div>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={handleDeleteClose}>Anulează</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteLoading} className="bg-red-600 hover:bg-red-700">
+                                {deleteLoading ? "Se șterge..." : "Șterge"}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardHeader>
             <CardContent>
                 {loading ? (
                     <div className="py-8 text-center text-muted-foreground">Se încarcă...</div>
                 ) : (
-                    <ClientsTable clients={clients} searchTerm={searchTerm} />
+                    <ClientsTable
+                        clients={clients}
+                        searchTerm={searchTerm}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                    />
                 )}
             </CardContent>
         </Card>

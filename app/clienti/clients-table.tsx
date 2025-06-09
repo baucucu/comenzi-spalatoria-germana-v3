@@ -1,10 +1,12 @@
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface Client {
     id: string;
@@ -21,9 +23,11 @@ interface Client {
 interface ClientsTableProps {
     clients: Client[];
     searchTerm: string;
+    onEdit?: (client: Client) => void;
+    onDelete?: (client: Client) => void;
 }
 
-export function ClientsTable({ clients, searchTerm }: ClientsTableProps) {
+export function ClientsTable({ clients, searchTerm, onEdit, onDelete }: ClientsTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [inputValue, setInputValue] = useState(searchTerm);
@@ -62,6 +66,7 @@ export function ClientsTable({ clients, searchTerm }: ClientsTableProps) {
                         <TableHead>Telefon</TableHead>
                         <TableHead>SMS Marketing</TableHead>
                         <TableHead>Email Marketing</TableHead>
+                        <TableHead>Acțiuni</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -84,6 +89,23 @@ export function ClientsTable({ clients, searchTerm }: ClientsTableProps) {
                                 ) : (
                                     <XCircle className="h-5 w-5 text-red-500 mx-auto" />
                                 )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => onEdit && onEdit(client)}>
+                                            <Edit className="w-4 h-4 mr-2" /> Editează
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onDelete && onDelete(client)} className="text-red-600">
+                                            <Trash2 className="w-4 h-4 mr-2" /> Șterge
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
                     ))}
