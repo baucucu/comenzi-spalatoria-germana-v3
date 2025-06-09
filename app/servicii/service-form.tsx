@@ -148,7 +148,7 @@ export function ServiceForm({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button size="sm" className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
+                    <Button className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
                         <Plus className="w-4 h-4 mr-2" />
                         {mode === "create" ? "Adaugă articol" : "Editează"}
                     </Button>
@@ -194,7 +194,7 @@ export function ServiceForm({
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <Label>Servicii și Prețuri</Label>
-                            <Button type="button" variant="outline" size="sm" onClick={addServiceEntry}>
+                            <Button type="button" onClick={addServiceEntry}>
                                 <Plus className="w-4 h-4 mr-1" />
                                 Adaugă serviciu
                             </Button>
