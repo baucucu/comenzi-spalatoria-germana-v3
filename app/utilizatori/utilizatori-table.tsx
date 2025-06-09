@@ -72,7 +72,7 @@ export default function UtilizatoriTable({ users }: UtilizatoriTableProps) {
         setLoading(true)
         setError(null)
         if (!selectedUser) return
-        const { error } = await supabase.auth.api.resetPasswordForEmail(selectedUser.email)
+        const { error } = await supabase.auth.resetPasswordForEmail(selectedUser.email)
         if (!error) {
             setDialogType(null)
             setOpen(false)
@@ -189,7 +189,7 @@ export default function UtilizatoriTable({ users }: UtilizatoriTableProps) {
                                             <TableCell className="px-6 py-4 text-right align-middle">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button type="button" className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground">
+                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                                             <MoreVertical className="w-4 h-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -218,15 +218,15 @@ export default function UtilizatoriTable({ users }: UtilizatoriTableProps) {
                             <DialogHeader>
                                 <DialogTitle>Editează Utilizator</DialogTitle>
                             </DialogHeader>
-                            <form className="grid gap-4 py-4" onSubmit={e => { e.preventDefault(); handleEdit() }}>
-                                <div className="grid grid-cols-4 items-center gap-4">
+                            <form className="space-y-4 py-4" onSubmit={e => { e.preventDefault(); handleEdit() }}>
+                                <div className="space-y-1">
                                     <Label htmlFor="email-edit" className="text-right">Email</Label>
-                                    <Input id="email-edit" type="email" value={form.email} disabled className="col-span-3" />
+                                    <Input id="email-edit" type="email" value={form.email} disabled className="" />
                                 </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
+                                <div className="space-y-1">
                                     <Label htmlFor="role-edit" className="text-right">Rol</Label>
                                     <Select value={form.role} onValueChange={role => setForm(f => ({ ...f, role }))}>
-                                        <SelectTrigger id="role-edit" className="col-span-3">
+                                        <SelectTrigger id="role-edit" className="">
                                             <SelectValue placeholder="Selectează rolul" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -234,10 +234,10 @@ export default function UtilizatoriTable({ users }: UtilizatoriTableProps) {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {error && <div className="text-red-600 text-sm mb-4 col-span-4">{error}</div>}
-                                <div className="flex justify-end gap-2 col-span-4">
-                                    <Button type="button" onClick={closeDialog} disabled={loading} className="border border-input bg-background hover:bg-accent hover:text-accent-foreground">Anulează</Button>
-                                    <Button type="submit" disabled={loading} className="bg-slate-800 hover:bg-slate-700">{loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Se salvează...</>) : "Salvează"}</Button>
+                                {error && <div className="text-red-600 text-sm mb-4">{error}</div>}
+                                <div className="flex justify-end gap-2">
+                                    <Button type="button" onClick={closeDialog} disabled={loading} variant="outline">Anulează</Button>
+                                    <Button type="submit" disabled={loading} >{loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Se salvează...</>) : "Salvează"}</Button>
                                 </div>
                             </form>
                         </DialogContent>

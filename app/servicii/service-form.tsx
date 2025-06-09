@@ -148,7 +148,7 @@ export function ServiceForm({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button size="sm" className="bg-slate-800 hover:bg-slate-700">
+                    <Button size="sm" className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
                         <Plus className="w-4 h-4 mr-2" />
                         {mode === "create" ? "Adaugă articol" : "Editează"}
                     </Button>
