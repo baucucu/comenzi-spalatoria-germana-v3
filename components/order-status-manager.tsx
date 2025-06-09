@@ -302,73 +302,71 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
         <div className="container mx-auto p-6">
             <Card>
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <CardTitle className="text-2xl font-semibold">Status Comenzi</CardTitle>
-                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button onClick={resetForm} className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    <span className="sm:inline">Adaugă Status</span>
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-[95vw] max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle>Adaugă Status Nou</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="name">Nume (intern)</Label>
-                                        <Input
-                                            id="name"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="ex: in_procesare"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="label">Etichetă (afișare)</Label>
-                                        <Input
-                                            id="label"
-                                            value={formData.label}
-                                            onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                                            placeholder="ex: În procesare"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label>Culoare</Label>
-                                        <div className="grid grid-cols-5 gap-2 mt-2">
-                                            {colorOptions.map((color) => (
-                                                <button
-                                                    key={color.value}
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, color: color.value })}
-                                                    className={`w-8 h-8 rounded ${color.preview} border-2 ${formData.color === color.value ? "border-foreground" : "border-transparent"
-                                                        }`}
-                                                    title={color.label}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Switch
-                                            id="status_final"
-                                            checked={formData.status_final}
-                                            onCheckedChange={(checked) => setFormData({ ...formData, status_final: checked })}
-                                        />
-                                        <Label htmlFor="status_final">Status final</Label>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row justify-end gap-2">
-                                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="w-full sm:w-auto">
-                                            Anulează
-                                        </Button>
-                                        <Button onClick={handleAdd} className="w-full sm:w-auto">
-                                            Adaugă
-                                        </Button>
+                    <CardTitle className="text-2xl font-semibold">Status Comenzi</CardTitle>
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button onClick={resetForm} className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700">
+                                <Plus className="w-4 h-4 mr-2" />
+                                <span className="sm:inline">Adaugă Status</span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[95vw] max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Adaugă Status Nou</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="name">Nume (intern)</Label>
+                                    <Input
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="ex: in_procesare"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="label">Etichetă (afișare)</Label>
+                                    <Input
+                                        id="label"
+                                        value={formData.label}
+                                        onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                                        placeholder="ex: În procesare"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Culoare</Label>
+                                    <div className="grid grid-cols-5 gap-2 mt-2">
+                                        {colorOptions.map((color) => (
+                                            <button
+                                                key={color.value}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, color: color.value })}
+                                                className={`w-8 h-8 rounded ${color.preview} border-2 ${formData.color === color.value ? "border-foreground" : "border-transparent"
+                                                    }`}
+                                                title={color.label}
+                                            />
+                                        ))}
                                     </div>
                                 </div>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        id="status_final"
+                                        checked={formData.status_final}
+                                        onCheckedChange={(checked) => setFormData({ ...formData, status_final: checked })}
+                                    />
+                                    <Label htmlFor="status_final">Status final</Label>
+                                </div>
+                                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="w-full sm:w-auto">
+                                        Anulează
+                                    </Button>
+                                    <Button onClick={handleAdd} className="w-full sm:w-auto">
+                                        Adaugă
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto">
                     <div className="space-y-3 min-h-0">
@@ -387,7 +385,7 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
                                         <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <Badge className={`bg-${status.color}-500 text-white flex-shrink-0`}>{status.label}</Badge>
+                                                <Badge className={`${status.color} text-white flex-shrink-0`}>{status.label}</Badge>
                                                 {status.status_final && (
                                                     <Badge variant="outline" className="text-xs flex-shrink-0">
                                                         Final
@@ -397,101 +395,8 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
                                         </div>
                                     </div>
 
-                                    {/* Desktop Actions */}
-                                    <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-                                        <Dialog
-                                            open={editingStatus?.id === status.id}
-                                            onOpenChange={(open) => !open && setEditingStatus(null)}
-                                        >
-                                            <DialogTrigger asChild>
-                                                <Button variant="ghost" size="sm" onClick={() => openEditDialog(status)}>
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent className="w-[95vw] max-w-md">
-                                                <DialogHeader>
-                                                    <DialogTitle>Editează Status</DialogTitle>
-                                                </DialogHeader>
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <Label htmlFor="edit-name">Nume (intern)</Label>
-                                                        <Input
-                                                            id="edit-name"
-                                                            value={formData.name}
-                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label htmlFor="edit-label">Etichetă (afișare)</Label>
-                                                        <Input
-                                                            id="edit-label"
-                                                            value={formData.label}
-                                                            onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label>Culoare</Label>
-                                                        <div className="grid grid-cols-5 gap-2 mt-2">
-                                                            {colorOptions.map((color) => (
-                                                                <button
-                                                                    key={color.value}
-                                                                    type="button"
-                                                                    onClick={() => setFormData({ ...formData, color: color.value })}
-                                                                    className={`w-8 h-8 rounded ${color.preview} border-2 ${formData.color === color.value ? "border-foreground" : "border-transparent"
-                                                                        }`}
-                                                                    title={color.label}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Switch
-                                                            id="edit-status_final"
-                                                            checked={formData.status_final}
-                                                            onCheckedChange={(checked) => setFormData({ ...formData, status_final: checked })}
-                                                        />
-                                                        <Label htmlFor="edit-status_final">Status final</Label>
-                                                    </div>
-                                                    <div className="flex flex-col sm:flex-row justify-end gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            onClick={() => setEditingStatus(null)}
-                                                            className="w-full sm:w-auto"
-                                                        >
-                                                            Anulează
-                                                        </Button>
-                                                        <Button onClick={handleEdit} className="w-full sm:w-auto">
-                                                            Salvează
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent className="w-[95vw] max-w-md">
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Șterge Status</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Ești sigur că vrei să ștergi statusul "{status.label}"? Această acțiune nu poate fi anulată.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                                                    <AlertDialogCancel className="w-full sm:w-auto">Anulează</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(status.id)} className="w-full sm:w-auto">
-                                                        Șterge
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-
-                                    {/* Mobile Actions Menu */}
-                                    <div className="sm:hidden flex-shrink-0">
+                                    {/* Unified Actions Menu */}
+                                    <div className="flex-shrink-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="sm">
@@ -499,13 +404,81 @@ export default function OrderStatusManager({ statusComenzi = initialStatuses }: 
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => openEditDialog(status)}>
-                                                    <Edit className="w-4 h-4 mr-2" />
-                                                    Editează
-                                                </DropdownMenuItem>
+                                                {/* Edit Action */}
+                                                <Dialog
+                                                    open={editingStatus?.id === status.id}
+                                                    onOpenChange={(open) => !open && setEditingStatus(null)}
+                                                >
+                                                    <DialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openEditDialog(status); }}>
+                                                            <Edit className="w-4 h-4 mr-2" />
+                                                            Editează
+                                                        </DropdownMenuItem>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="w-[95vw] max-w-md">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Editează Status</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <Label htmlFor="edit-name">Nume (intern)</Label>
+                                                                <Input
+                                                                    id="edit-name"
+                                                                    value={formData.name}
+                                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label htmlFor="edit-label">Etichetă (afișare)</Label>
+                                                                <Input
+                                                                    id="edit-label"
+                                                                    value={formData.label}
+                                                                    onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label>Culoare</Label>
+                                                                <div className="grid grid-cols-5 gap-2 mt-2">
+                                                                    {colorOptions.map((color) => (
+                                                                        <button
+                                                                            key={color.value}
+                                                                            type="button"
+                                                                            onClick={() => setFormData({ ...formData, color: color.value })}
+                                                                            className={`w-8 h-8 rounded ${color.preview} border-2 ${formData.color === color.value ? "border-foreground" : "border-transparent"}
+                                                                                `}
+                                                                            title={color.label}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Switch
+                                                                    id="edit-status_final"
+                                                                    checked={formData.status_final}
+                                                                    onCheckedChange={(checked) => setFormData({ ...formData, status_final: checked })}
+                                                                />
+                                                                <Label htmlFor="edit-status_final">Status final</Label>
+                                                            </div>
+                                                            <div className="flex flex-col sm:flex-row justify-end gap-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => setEditingStatus(null)}
+                                                                    className="w-full sm:w-auto"
+                                                                >
+                                                                    Anulează
+                                                                </Button>
+                                                                <Button onClick={handleEdit} className="w-full sm:w-auto">
+                                                                    Salvează
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+
+                                                {/* Delete Action */}
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:text-red-500">
                                                             <Trash2 className="w-4 h-4 mr-2" />
                                                             Șterge
                                                         </DropdownMenuItem>

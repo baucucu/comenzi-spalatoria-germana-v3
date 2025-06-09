@@ -201,9 +201,9 @@ function ComenziMenuItem({ route, status, label, badge, color, handleMenuItemCli
                 isActive={isActive}
             >
                 <Link href={route} onClick={() => handleMenuItemClick(route)}>
-                    <Badge className={`text-xs bg-${color}-500`}>{label}</Badge>
+                    <Badge className={`text-xs ${color}`}>{label}</Badge>
                     <SidebarMenuBadge>
-                        <Badge className={`text-xs bg-${color}-500`}>{ordersCount}</Badge>
+                        <Badge className={`text-xs ${color}`}>{ordersCount}</Badge>
 
                     </SidebarMenuBadge>
                 </Link>
