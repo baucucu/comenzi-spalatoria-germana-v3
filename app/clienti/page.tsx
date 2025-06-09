@@ -15,8 +15,8 @@ export default async function Clienti({ searchParams }: { searchParams: Promise<
     let query = supabase
         .from("customers")
         .select("*")
-        .order("nume")
         .order("prenume")
+        .order("nume")
         .range(from, to);
 
     if (searchQuery) {

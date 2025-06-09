@@ -1,11 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { ClientsTable } from "./clients-table";
 import { ClientForm } from "./client-form";
+import { createClient } from "@/utils/supabase/client";
 
 interface Client {
     id: string;
@@ -27,14 +29,61 @@ interface ClientManagementProps {
 export default function ClientManagement({ initialClients, searchTerm }: ClientManagementProps) {
     const [clients, setClients] = useState<Client[]>(initialClients);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const searchParams = useSearchParams();
+
+    // Helper to fetch the current page of clients
+    const fetchClients = async () => {
+        setLoading(true);
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        const searchQuery = searchParams.get("search")?.trim() || "";
+        const supabase = createClient();
+        let query = supabase
+            .from("customers")
+            .select("*")
+            .order("nume")
+            .order("prenume")
+            .range(from, to);
+        if (searchQuery) {
+            const q = `%${searchQuery.toLowerCase()}%`;
+            query = query.or(
+                `nume.ilike.${q},prenume.ilike.${q},email.ilike.${q},telefon.ilike.${q}`
+            );
+        }
+        const { data, error } = await query;
+        if (!error) setClients(data || []);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        // Listen to changes in search params (pagination/search)
+        fetchClients();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
+    useEffect(() => {
+        const supabase = createClient();
+        const channel = supabase
+            .channel('public:customers')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'customers' },
+                () => {
+                    fetchClients();
+                }
+            )
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     const handleAddClient = () => setIsAddModalOpen(true);
     const handleCancelAdd = () => setIsAddModalOpen(false);
-
-    const handleClientAdded = (newClient?: Client) => {
-        if (newClient) setClients((prev) => [newClient, ...prev]);
-        setIsAddModalOpen(false);
-    };
 
     return (
         <Card>
@@ -53,13 +102,16 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
                         <ClientForm
                             mode="create"
                             onSuccess={handleCancelAdd}
-                        // Optionally, you can pass a callback to update the list with the new client
                         />
                     </DialogContent>
                 </Dialog>
             </CardHeader>
             <CardContent>
-                <ClientsTable clients={clients} searchTerm={searchTerm} />
+                {loading ? (
+                    <div className="py-8 text-center text-muted-foreground">Se încarcă...</div>
+                ) : (
+                    <ClientsTable clients={clients} searchTerm={searchTerm} />
+                )}
             </CardContent>
         </Card>
     );

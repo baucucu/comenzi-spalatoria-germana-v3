@@ -56,8 +56,8 @@ export function ClientsTable({ clients, searchTerm }: ClientsTableProps) {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Nume</TableHead>
                         <TableHead>Prenume</TableHead>
+                        <TableHead>Nume</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefon</TableHead>
                         <TableHead>SMS Marketing</TableHead>
@@ -67,8 +67,8 @@ export function ClientsTable({ clients, searchTerm }: ClientsTableProps) {
                 <TableBody>
                     {clients.map((client) => (
                         <TableRow key={client.id}>
-                            <TableCell>{client.nume}</TableCell>
                             <TableCell>{client.prenume}</TableCell>
+                            <TableCell>{client.nume}</TableCell>
                             <TableCell>{client.email}</TableCell>
                             <TableCell>{client.telefon}</TableCell>
                             <TableCell className="text-center">
