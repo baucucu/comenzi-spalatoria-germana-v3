@@ -25,92 +25,79 @@ interface ClientsTableProps {
     searchTerm: string;
     onEdit?: (client: Client) => void;
     onDelete?: (client: Client) => void;
+    onSearchChange?: (value: string) => void;
 }
 
-export function ClientsTable({ clients, searchTerm, onEdit, onDelete }: ClientsTableProps) {
+export function ClientsTable({ clients, searchTerm, onEdit, onDelete, onSearchChange }: ClientsTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [inputValue, setInputValue] = useState(searchTerm);
-
-    useEffect(() => {
-        setInputValue(searchTerm);
-    }, [searchTerm]);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            const currentSearchParams = new URLSearchParams(searchParams.toString());
-            if (inputValue) {
-                currentSearchParams.set('search', inputValue);
-            } else {
-                currentSearchParams.delete('search');
-            }
-            router.push(`?${currentSearchParams.toString()}`);
-        }, 300);
-        return () => clearTimeout(handler);
-    }, [inputValue]);
 
     return (
-        <div className="space-y-4">
-            <Input
-                placeholder="Search clients..."
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                className="max-w-sm"
-            />
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Prenume</TableHead>
-                        <TableHead>Nume</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Telefon</TableHead>
-                        <TableHead>SMS Marketing</TableHead>
-                        <TableHead>Email Marketing</TableHead>
-                        <TableHead>Acțiuni</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {clients.map((client) => (
-                        <TableRow key={client.id}>
-                            <TableCell>{client.prenume}</TableCell>
-                            <TableCell>{client.nume}</TableCell>
-                            <TableCell>{client.email}</TableCell>
-                            <TableCell>{client.telefon}</TableCell>
-                            <TableCell className="text-center">
-                                {client.accept_marketing_sms ? (
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
-                                ) : (
-                                    <XCircle className="h-5 w-5 text-red-500 mx-auto" />
-                                )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                {client.accept_marketing_email ? (
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
-                                ) : (
-                                    <XCircle className="h-5 w-5 text-red-500 mx-auto" />
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => onEdit && onEdit(client)}>
-                                            <Edit className="w-4 h-4 mr-2" /> Editează
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onDelete && onDelete(client)} className="text-red-600">
-                                            <Trash2 className="w-4 h-4 mr-2" /> Șterge
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
+        <div className="flex flex-col h-full">
+            <div className="mb-2">
+                <Input
+                    placeholder="Search clients..."
+                    value={searchTerm}
+                    onChange={e => onSearchChange ? onSearchChange(e.target.value) : undefined}
+                    className="max-w-sm"
+                />
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+                <Table className="h-full">
+                    <TableHeader className="sticky top-0 z-10 bg-white">
+                        <TableRow>
+                            <TableHead className="sticky top-0 z-10 bg-white">Prenume</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">Nume</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">Email</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">Telefon</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">SMS Marketing</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">Email Marketing</TableHead>
+                            <TableHead className="sticky top-0 z-10 bg-white">Acțiuni</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {clients.map((client) => (
+                            <TableRow key={client.id}>
+                                <TableCell>{client.prenume}</TableCell>
+                                <TableCell>{client.nume}</TableCell>
+                                <TableCell>{client.email}</TableCell>
+                                <TableCell>{client.telefon}</TableCell>
+                                <TableCell className="text-center">
+                                    {client.accept_marketing_sms ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                                    ) : (
+                                        <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {client.accept_marketing_email ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                                    ) : (
+                                        <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                <MoreVertical className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => onEdit && onEdit(client)}>
+                                                <Edit className="w-4 h-4 mr-2" /> Editează
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onDelete && onDelete(client)} className="text-red-600">
+                                                <Trash2 className="w-4 h-4 mr-2" /> Șterge
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 } 

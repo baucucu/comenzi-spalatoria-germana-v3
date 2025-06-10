@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { ClientsTable } from "./clients-table";
 import { ClientForm } from "./client-form";
 import { createClient } from "@/utils/supabase/client";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import debounce from "lodash/debounce";
 
 interface Client {
     id: string;
@@ -27,6 +28,8 @@ interface ClientManagementProps {
     searchTerm: string;
 }
 
+const PAGE_SIZE = 20;
+
 export default function ClientManagement({ initialClients, searchTerm }: ClientManagementProps) {
     const [clients, setClients] = useState<Client[]>(initialClients);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -34,40 +37,71 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
     const [deletingClient, setDeletingClient] = useState<Client | null>(null);
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(initialClients.length === PAGE_SIZE);
+    const [page, setPage] = useState(1); // page 1 is initialClients
+    const [search, setSearch] = useState(searchTerm);
     const searchParams = useSearchParams();
+    const router = useRouter();
 
-    // Helper to fetch the current page of clients
-    const fetchClients = async () => {
+    // Fetch clients from API route
+    const fetchClients = async (nextPage: number, searchValue = search) => {
         setLoading(true);
-        const page = parseInt(searchParams.get("page") || "1", 10);
-        const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-        const searchQuery = searchParams.get("search")?.trim() || "";
-        const supabase = createClient();
-        let query = supabase
-            .from("customers")
-            .select("*")
-            .order("nume")
-            .order("prenume")
-            .range(from, to);
-        if (searchQuery) {
-            const q = `%${searchQuery.toLowerCase()}%`;
-            query = query.or(
-                `nume.ilike.${q},prenume.ilike.${q},email.ilike.${q},telefon.ilike.${q}`
-            );
+        try {
+            const params = new URLSearchParams({
+                page: nextPage.toString(),
+                pageSize: PAGE_SIZE.toString(),
+                search: searchValue || "",
+            });
+            const res = await fetch(`/api/clienti?${params.toString()}`);
+            if (!res.ok) {
+                setLoading(false);
+                return;
+            }
+            const text = await res.text();
+            if (!text) {
+                setLoading(false);
+                return;
+            }
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                setLoading(false);
+                return;
+            }
+            setClients((prev) => [...prev, ...(data.clienti || [])]);
+            setHasMore(data.hasMore);
+            setPage(nextPage);
+        } catch (e) {
+            // Optionally show an error message
         }
-        const { data, error } = await query;
-        if (!error) setClients(data || []);
         setLoading(false);
     };
 
+    // Infinite scroll using window scroll
     useEffect(() => {
-        // Listen to changes in search params (pagination/search)
-        fetchClients();
+        const handleScroll = debounce(() => {
+            if (loading || !hasMore) return;
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                fetchClients(page + 1);
+            }
+        }, 200);
+        window.addEventListener("scroll", handleScroll);
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            handleScroll.cancel();
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
+    }, [loading, hasMore, page, search]);
 
+    // Reset on search term change
+    useEffect(() => {
+        setClients(initialClients);
+        setPage(1);
+        setHasMore(initialClients.length === PAGE_SIZE);
+    }, [initialClients, searchTerm]);
+
+    // Realtime updates: re-fetch all loaded clients on any change
     useEffect(() => {
         const supabase = createClient();
         const channel = supabase
@@ -76,7 +110,11 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'customers' },
                 () => {
-                    fetchClients();
+                    // Re-fetch all loaded clients
+                    setClients([]);
+                    setPage(1);
+                    setHasMore(true);
+                    fetchClients(1, search);
                 }
             )
             .subscribe();
@@ -84,18 +122,21 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
             supabase.removeChannel(channel);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
+    }, [search]);
 
+    // Handlers for add/edit/delete (unchanged)
     const handleAddClient = () => setIsAddModalOpen(true);
     const handleCancelAdd = () => setIsAddModalOpen(false);
     const handleEdit = (client: Client) => setEditingClient(client);
     const handleEditClose = () => setEditingClient(null);
     const handleDelete = (client: Client) => setDeletingClient(client);
     const handleDeleteClose = () => setDeletingClient(null);
-
     const handleEditSuccess = () => {
         setEditingClient(null);
-        fetchClients();
+        setClients([]);
+        setPage(1);
+        setHasMore(true);
+        fetchClients(1, search);
     };
     const handleDeleteConfirm = async () => {
         if (!deletingClient) return;
@@ -104,72 +145,85 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
         await supabase.from("customers").delete().eq("id", deletingClient.id);
         setDeleteLoading(false);
         setDeletingClient(null);
-        fetchClients();
+        setClients([]);
+        setPage(1);
+        setHasMore(true);
+        fetchClients(1, search);
     };
 
+    // Simple rotating loading icon
+    const Spinner = () => (
+        <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    );
+
     return (
-        <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
-                <CardTitle className="text-2xl font-semibold">Clienti</CardTitle>
-                <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                    <DialogTrigger asChild>
-                        <Button onClick={handleAddClient}>
-                            <Plus className="mr-2 h-4 w-4" /> Adaugă Client
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Adaugă Client Nou</DialogTitle>
-                        </DialogHeader>
-                        <ClientForm
-                            mode="create"
-                            onSuccess={handleCancelAdd}
-                        />
-                    </DialogContent>
-                </Dialog>
-                {/* Edit Client Dialog */}
-                <Dialog open={!!editingClient} onOpenChange={v => !v && setEditingClient(null)}>
-                    <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Editează Client</DialogTitle>
-                        </DialogHeader>
-                        {editingClient && (
+        <div className="flex flex-col h-full w-full">
+            <Card className="flex flex-col flex-1 min-h-0 w-full">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+                    <CardTitle className="text-2xl font-semibold">Clienti</CardTitle>
+                    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button onClick={handleAddClient}>
+                                <Plus className="mr-2 h-4 w-4" /> Adaugă Client
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>Adaugă Client Nou</DialogTitle>
+                            </DialogHeader>
                             <ClientForm
-                                mode="edit"
-                                initialValues={editingClient}
-                                onSuccess={handleEditSuccess}
+                                mode="create"
+                                onSuccess={handleCancelAdd}
                             />
-                        )}
-                    </DialogContent>
-                </Dialog>
-                {/* Delete Confirmation Dialog */}
-                <AlertDialog open={!!deletingClient} onOpenChange={v => !v && setDeletingClient(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Șterge clientul?</AlertDialogTitle>
-                        </AlertDialogHeader>
-                        <div className="py-2">Ești sigur că vrei să ștergi clientul <b>{deletingClient?.nume} {deletingClient?.prenume}</b>? Această acțiune nu poate fi anulată.</div>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={handleDeleteClose}>Anulează</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteLoading} className="bg-red-600 hover:bg-red-700">
-                                {deleteLoading ? "Se șterge..." : "Șterge"}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </CardHeader>
-            <CardContent>
-                {loading ? (
-                    <div className="py-8 text-center text-muted-foreground">Se încarcă...</div>
-                ) : (
+                        </DialogContent>
+                    </Dialog>
+                    {/* Edit Client Dialog */}
+                    <Dialog open={!!editingClient} onOpenChange={v => !v && setEditingClient(null)}>
+                        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>Editează Client</DialogTitle>
+                            </DialogHeader>
+                            {editingClient && (
+                                <ClientForm
+                                    mode="edit"
+                                    initialValues={editingClient}
+                                    onSuccess={handleEditSuccess}
+                                />
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                    {/* Delete Confirmation Dialog */}
+                    <AlertDialog open={!!deletingClient} onOpenChange={v => !v && setDeletingClient(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Șterge clientul?</AlertDialogTitle>
+                            </AlertDialogHeader>
+                            <div className="py-2">Ești sigur că vrei să ștergi clientul <b>{deletingClient?.nume} {deletingClient?.prenume}</b>? Această acțiune nu poate fi anulată.</div>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={handleDeleteClose}>Anulează</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteLoading} className="bg-red-600 hover:bg-red-700">
+                                    {deleteLoading ? "Se șterge..." : "Șterge"}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0 overflow-auto">
                     <ClientsTable
                         clients={clients}
-                        searchTerm={searchTerm}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        searchTerm={search}
+                        onSearchChange={setSearch}
                     />
-                )}
-            </CardContent>
-        </Card>
+                    {loading && <Spinner />}
+                    {!hasMore && (
+                        <div className="py-4 text-center text-gray-400">No more clients</div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 } 

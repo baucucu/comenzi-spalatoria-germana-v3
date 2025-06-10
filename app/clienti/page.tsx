@@ -4,11 +4,7 @@ import ClientManagement from "./client-management"
 
 export default async function Clienti({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const params = await searchParams;
-    const page = typeof params.page === "string" ? parseInt(params.page, 10) : 1;
     const pageSize = typeof params.pageSize === "string" ? parseInt(params.pageSize, 10) : 20;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-
     const searchQuery = typeof params.search === "string" ? params.search.trim() : "";
     const supabase = await createClient();
 
@@ -17,7 +13,7 @@ export default async function Clienti({ searchParams }: { searchParams: Promise<
         .select("*")
         .order("prenume")
         .order("nume")
-        .range(from, to);
+        .range(0, pageSize - 1);
 
     if (searchQuery) {
         const q = `%${searchQuery.toLowerCase()}%`;
