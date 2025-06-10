@@ -34,9 +34,9 @@ export function ClientsTable({ clients, searchTerm, onEdit, onDelete, onSearchCh
 
     return (
         <div className="flex flex-col h-full">
-            <div className="mb-2">
+            <div className="mb-2 mt-2">
                 <Input
-                    placeholder="Search clients..."
+                    placeholder="Cauta clienti..."
                     value={searchTerm}
                     onChange={e => onSearchChange ? onSearchChange(e.target.value) : undefined}
                     className="max-w-sm"

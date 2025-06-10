@@ -124,6 +124,19 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search]);
 
+    // Debounced search effect
+    useEffect(() => {
+        // Debounce search to avoid too many requests
+        const handler = setTimeout(() => {
+            setClients([]);
+            setPage(1);
+            setHasMore(true);
+            fetchClients(1, search);
+        }, 400);
+        return () => clearTimeout(handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
+
     // Handlers for add/edit/delete (unchanged)
     const handleAddClient = () => setIsAddModalOpen(true);
     const handleCancelAdd = () => setIsAddModalOpen(false);
@@ -220,7 +233,7 @@ export default function ClientManagement({ initialClients, searchTerm }: ClientM
                     />
                     {loading && <Spinner />}
                     {!hasMore && (
-                        <div className="py-4 text-center text-gray-400">No more clients</div>
+                        <div className="py-4 text-center text-gray-400">Nu mai sunt alti clienti</div>
                     )}
                 </CardContent>
             </Card>
