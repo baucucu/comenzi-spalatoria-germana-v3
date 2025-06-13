@@ -38,14 +38,6 @@ const PAYMENT_METHODS = [
     { value: "OP", label: "Transfer bancar" },
 ];
 
-const DISCOUNT_OPTIONS = [
-    { value: 0, label: "Fără discount" },
-    { value: 5, label: "5%" },
-    { value: 10, label: "10%" },
-    { value: 15, label: "15%" },
-    { value: 20, label: "20%" },
-];
-
 interface OrderDetailsSidebarProps {
     order: Order | null;
     isOpen: boolean;
@@ -72,6 +64,7 @@ export function OrderDetailsSidebar({
     const [refreshClient, setRefreshClient] = useState(0);
     const [pickupPopoverOpen, setPickupPopoverOpen] = useState(false);
     const [deliveryPopoverOpen, setDeliveryPopoverOpen] = useState(false);
+    const [discountOptions, setDiscountOptions] = useState<{ value: number; label: string }[]>([{ value: 0, label: "Fără discount" }]);
     const supabase = createClient();
 
     useEffect(() => {
@@ -133,6 +126,24 @@ export function OrderDetailsSidebar({
         };
         fetchAddresses();
     }, [order?.customers?.id, refreshClient]);
+
+    useEffect(() => {
+        const fetchDiscounts = async () => {
+            const { data, error } = await supabase
+                .from("discounts")
+                .select("id, name, discount_value, discount_type");
+            if (!error && data) {
+                const options = [
+                    { value: 0, label: "Fără discount" },
+                    ...data
+                        .filter((d: any) => d.discount_type === "percentage")
+                        .map((d: any) => ({ value: d.discount_value, label: `${d.discount_value}%` }))
+                ];
+                setDiscountOptions(options);
+            }
+        };
+        fetchDiscounts();
+    }, []);
 
     const handleStatusChange = async (newStatus: string) => {
         if (!order) return;
@@ -351,7 +362,7 @@ export function OrderDetailsSidebar({
                     onPaymentMethodChange={handlePaymentMethodChange}
                     onDiscountChange={handleDiscountChange}
                     PAYMENT_METHODS={PAYMENT_METHODS}
-                    DISCOUNT_OPTIONS={DISCOUNT_OPTIONS}
+                    DISCOUNT_OPTIONS={discountOptions}
                     formatCurrency={formatCurrency}
                 />
             </SheetContent>
