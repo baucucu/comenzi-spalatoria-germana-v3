@@ -510,10 +510,38 @@ export function OrderDetailsSidebar({
                                     </div>
                                 )}
                             </div>
+                            {/* Edit Client Dialog */}
+                            <Dialog open={editClientDialogOpen} onOpenChange={setEditClientDialogOpen}>
+                                <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle>Editează Client</DialogTitle>
+                                    </DialogHeader>
+                                    <ClientForm
+                                        mode="edit"
+                                        initialValues={
+                                            order && order.customers
+                                                ? {
+                                                    prenume: order.customers.prenume ?? "",
+                                                    nume: order.customers.nume ?? "",
+                                                    email: order.customers.email ?? "",
+                                                    telefon: order.customers.telefon ?? "",
+                                                    accept_marketing_sms: order.customers.accept_marketing_sms ?? false,
+                                                    accept_marketing_email: order.customers.accept_marketing_email ?? false,
+                                                }
+                                                : undefined
+                                        }
+                                        onSuccess={() => {
+                                            setEditClientDialogOpen(false);
+                                            setRefreshClient(x => x + 1);
+                                            if (typeof onOrderUpdated === "function") onOrderUpdated();
+                                        }}
+                                    />
+                                </DialogContent>
+                            </Dialog>
                             {/* Pickup address selector */}
                             <div className="flex flex-col gap-1 w-full">
                                 <span className="text-sm font-medium">Ridicare</span>
-                                <Popover disabled={!order.customers}>
+                                <Popover>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
@@ -563,7 +591,7 @@ export function OrderDetailsSidebar({
                             {/* Delivery address selector */}
                             <div className="flex flex-col gap-1 w-full">
                                 <span className="text-sm font-medium">Livrare</span>
-                                <Popover disabled={!order.customers}>
+                                <Popover>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
