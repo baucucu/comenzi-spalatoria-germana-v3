@@ -85,18 +85,14 @@ interface OrdersTableProps {
     orders: Order[];
     searchTerm: string;
     dateRange: DateRange | undefined;
-    onEdit?: (order: Order) => void;
-    onDelete?: (order: Order) => void;
     onSearchChange?: (value: string) => void;
-    onDateRangeChange?: (range: DateRange | undefined) => void;
+    onDateRangeChange?: (date: DateRange | undefined) => void;
 }
 
 export function OrdersTable({
     orders,
     searchTerm,
     dateRange,
-    onEdit,
-    onDelete,
     onSearchChange,
     onDateRangeChange
 }: OrdersTableProps) {
@@ -293,8 +289,6 @@ export function OrdersTable({
                 order={selectedOrder}
                 isOpen={isSheetOpen}
                 onOpenChange={setIsSheetOpen}
-                onEdit={onEdit}
-                onDelete={onDelete}
             />
         </div>
     );
