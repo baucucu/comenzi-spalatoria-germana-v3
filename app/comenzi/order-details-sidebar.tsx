@@ -116,6 +116,8 @@ export function OrderDetailsSidebar({
     const [editClientDialogOpen, setEditClientDialogOpen] = useState(false);
     const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
     const [refreshClient, setRefreshClient] = useState(0);
+    const [pickupPopoverOpen, setPickupPopoverOpen] = useState(false);
+    const [deliveryPopoverOpen, setDeliveryPopoverOpen] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -548,7 +550,7 @@ export function OrderDetailsSidebar({
                             {/* Pickup address selector */}
                             <div className="flex flex-col gap-1 w-full">
                                 <span className="text-sm font-medium">Ridicare</span>
-                                <Popover>
+                                <Popover open={pickupPopoverOpen} onOpenChange={setPickupPopoverOpen}>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
@@ -557,6 +559,7 @@ export function OrderDetailsSidebar({
                                                 !order.customers && "opacity-50 cursor-not-allowed"
                                             )}
                                             disabled={!order.customers}
+                                            onClick={() => setPickupPopoverOpen(true)}
                                         >
                                             {order && order.adresa_colectare_id && addresses.length > 0 ? (
                                                 (() => {
@@ -577,7 +580,10 @@ export function OrderDetailsSidebar({
                                         <div className="space-y-2 max-h-64 overflow-y-auto">
                                             <button
                                                 className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", !order.adresa_colectare_id && "bg-accent")}
-                                                onClick={() => handlePickupAddressChange("null")}
+                                                onClick={() => {
+                                                    handlePickupAddressChange("null");
+                                                    setPickupPopoverOpen(false);
+                                                }}
                                             >
                                                 În magazin
                                             </button>
@@ -585,7 +591,10 @@ export function OrderDetailsSidebar({
                                                 <button
                                                     key={addr.id}
                                                     className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", order.adresa_colectare_id === addr.id && "bg-accent")}
-                                                    onClick={() => handlePickupAddressChange(String(addr.id))}
+                                                    onClick={() => {
+                                                        handlePickupAddressChange(String(addr.id));
+                                                        setPickupPopoverOpen(false);
+                                                    }}
                                                 >
                                                     <div className="font-medium">{addr.adresa}</div>
                                                     {addr.detalii && <div className="text-xs text-muted-foreground">{addr.detalii}</div>}
@@ -598,7 +607,7 @@ export function OrderDetailsSidebar({
                             {/* Delivery address selector */}
                             <div className="flex flex-col gap-1 w-full">
                                 <span className="text-sm font-medium">Livrare</span>
-                                <Popover>
+                                <Popover open={deliveryPopoverOpen} onOpenChange={setDeliveryPopoverOpen}>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
@@ -607,6 +616,7 @@ export function OrderDetailsSidebar({
                                                 !order.customers && "opacity-50 cursor-not-allowed"
                                             )}
                                             disabled={!order.customers}
+                                            onClick={() => setDeliveryPopoverOpen(true)}
                                         >
                                             {order && order.adresa_returnare_id && addresses.length > 0 ? (
                                                 (() => {
@@ -627,7 +637,10 @@ export function OrderDetailsSidebar({
                                         <div className="space-y-2 max-h-64 overflow-y-auto">
                                             <button
                                                 className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", !order.adresa_returnare_id && "bg-accent")}
-                                                onClick={() => handleDeliveryAddressChange("null")}
+                                                onClick={() => {
+                                                    handleDeliveryAddressChange("null");
+                                                    setDeliveryPopoverOpen(false);
+                                                }}
                                             >
                                                 În magazin
                                             </button>
@@ -635,7 +648,10 @@ export function OrderDetailsSidebar({
                                                 <button
                                                     key={addr.id}
                                                     className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", order.adresa_returnare_id === addr.id && "bg-accent")}
-                                                    onClick={() => handleDeliveryAddressChange(String(addr.id))}
+                                                    onClick={() => {
+                                                        handleDeliveryAddressChange(String(addr.id));
+                                                        setDeliveryPopoverOpen(false);
+                                                    }}
                                                 >
                                                     <div className="font-medium">{addr.adresa}</div>
                                                     {addr.detalii && <div className="text-xs text-muted-foreground">{addr.detalii}</div>}
