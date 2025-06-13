@@ -263,7 +263,10 @@ export function OrderDetailsSidebar({
             .eq("id", order.id);
         setIsLoading(false);
         if (error) toast.error("Nu am putut actualiza adresa de colectare");
-        else toast.success("Adresa de colectare actualizata");
+        else {
+            toast.success("Adresa de colectare actualizata");
+            if (typeof onOrderUpdated === "function") onOrderUpdated();
+        }
     };
 
     const handleDeliveryAddressChange = async (value: string) => {
@@ -275,7 +278,10 @@ export function OrderDetailsSidebar({
             .eq("id", order.id);
         setIsLoading(false);
         if (error) toast.error("Nu am putut actualiza adresa de livrare");
-        else toast.success("Adresa de livrare actualizata");
+        else {
+            toast.success("Adresa de livrare actualizata");
+            if (typeof onOrderUpdated === "function") onOrderUpdated();
+        }
     };
 
     const handleCustomerChange = async (value: string) => {
@@ -521,6 +527,7 @@ export function OrderDetailsSidebar({
                                         initialValues={
                                             order && order.customers
                                                 ? {
+                                                    id: order.customers.id,
                                                     prenume: order.customers.prenume ?? "",
                                                     nume: order.customers.nume ?? "",
                                                     email: order.customers.email ?? "",

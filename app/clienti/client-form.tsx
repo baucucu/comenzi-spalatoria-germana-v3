@@ -8,10 +8,12 @@ import { DialogDescription } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import GeoapifyAutocomplete from "@/components/GeoapifyAutocomplete";
+import { AddressInputCard } from "@/components/ui/AddressInputCard";
 
 interface ClientFormProps {
     mode: "create" | "edit";
     initialValues?: {
+        id?: string;
         prenume: string;
         nume: string;
         email: string;
@@ -31,8 +33,8 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
     const [acceptEmail, setAcceptEmail] = useState(initialValues?.accept_marketing_email || false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [addresses, setAddresses] = useState<{ id?: number, adresa: string, tempKey?: string }[]>([]);
-    const [originalAddresses, setOriginalAddresses] = useState<{ id: number, adresa: string, tempKey?: string }[]>([]);
+    const [addresses, setAddresses] = useState<{ id?: number, adresa: string, detalii?: string, tempKey?: string }[]>([]);
+    const [originalAddresses, setOriginalAddresses] = useState<{ id: number, adresa: string, detalii?: string, tempKey?: string }[]>([]);
     const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -41,11 +43,11 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
                 const supabase = (await import("@/utils/supabase/client")).createClient();
                 const { data, error } = await supabase
                     .from("addresses")
-                    .select("id, adresa")
+                    .select("id, adresa, detalii")
                     .eq("customer_id", (initialValues as any).id);
                 if (!error && data) {
-                    setAddresses(data.map((a: any) => ({ id: a.id, adresa: a.adresa })));
-                    setOriginalAddresses(data.map((a: any) => ({ id: a.id, adresa: a.adresa })));
+                    setAddresses(data.map((a: any) => ({ id: a.id, adresa: a.adresa, detalii: a.detalii })));
+                    setOriginalAddresses(data.map((a: any) => ({ id: a.id, adresa: a.adresa, detalii: a.detalii })));
                 }
             };
             fetchAddresses();
@@ -55,10 +57,13 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
     const handleAddAddress = () =>
         setAddresses([
             ...addresses,
-            { adresa: "", tempKey: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) }
+            { adresa: "", detalii: "", tempKey: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) }
         ]);
     const handleAddressChange = (idx: number, value: string) => {
         setAddresses(addresses.map((addr, i) => i === idx ? { ...addr, adresa: value } : addr));
+    };
+    const handleAddressDetaliiChange = (idx: number, value: string) => {
+        setAddresses(addresses.map((addr, i) => i === idx ? { ...addr, detalii: value } : addr));
     };
     const handleRemoveAddress = async (idx: number) => {
         const addr = addresses[idx];
@@ -126,12 +131,12 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
                     if (addr.id) {
                         // Update if changed
                         const orig = originalAddresses.find(a => a.id === addr.id);
-                        if (orig && orig.adresa !== addr.adresa) {
-                            await supabase.from("addresses").update({ adresa: addr.adresa }).eq("id", addr.id);
+                        if (orig && (orig.adresa !== addr.adresa || orig.detalii !== addr.detalii)) {
+                            await supabase.from("addresses").update({ adresa: addr.adresa, detalii: addr.detalii }).eq("id", addr.id);
                         }
                     } else if (addr.adresa.trim()) {
                         // Insert new
-                        await supabase.from("addresses").insert({ adresa: addr.adresa.trim(), customer_id: customerId });
+                        await supabase.from("addresses").insert({ adresa: addr.adresa.trim(), detalii: addr.detalii || "", customer_id: customerId });
                     }
                 }
             }
@@ -183,20 +188,15 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
                     <Label className="block mb-2 text-base font-semibold">Adrese</Label>
                     <div className="flex flex-col gap-2">
                         {addresses.map((addr, idx) => (
-                            <div key={addr.id || addr.tempKey} className="flex gap-2 items-center">
-                                <GeoapifyAutocomplete
-                                    value={addr.adresa}
-                                    onChange={value => handleAddressChange(idx, value)}
-                                    placeholder="Introduceți adresa..."
-                                />
-                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveAddress(idx)} disabled={deletingAddressId === addr.id}>
-                                    {deletingAddressId === addr.id ? (
-                                        <span className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full inline-block" />
-                                    ) : (
-                                        <Trash2 className="w-4 h-4 text-red-500" />
-                                    )}
-                                </Button>
-                            </div>
+                            <AddressInputCard
+                                key={addr.id || addr.tempKey}
+                                adresa={addr.adresa}
+                                detalii={addr.detalii}
+                                onAdresaChange={value => handleAddressChange(idx, value)}
+                                onDetaliiChange={value => handleAddressDetaliiChange(idx, value)}
+                                onDelete={() => handleRemoveAddress(idx)}
+                                disabled={deletingAddressId === addr.id}
+                            />
                         ))}
                         <Button type="button" variant="outline" className="mt-2 w-fit" onClick={handleAddAddress}>
                             <Plus className="w-4 h-4 mr-1" /> Adaugă adresă
