@@ -16,6 +16,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { ClientForm } from "@/app/clienti/client-form";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface OrderStatus {
     id: number;
@@ -352,6 +353,9 @@ export function OrderDetailsSidebar({
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetContent className="flex flex-col p-0 w-full sm:max-w-xl">
+                <SheetHeader>
+                    <SheetTitle><VisuallyHidden>Detalii comandă</VisuallyHidden></SheetTitle>
+                </SheetHeader>
                 <Tabs defaultValue="details" className="w-full h-full flex flex-col flex-1">
                     <TabsList className="w-full mb-2">
                         <TabsTrigger value="details" className="flex-1">Detalii comandă</TabsTrigger>
@@ -503,6 +507,7 @@ export function OrderDetailsSidebar({
                                         {/* Add Client Dialog */}
                                         <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
                                             <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                                                <DialogTitle><VisuallyHidden>Adaugă Client Nou</VisuallyHidden></DialogTitle>
                                                 <DialogHeader>
                                                     <DialogTitle>Adaugă Client Nou</DialogTitle>
                                                 </DialogHeader>
@@ -521,6 +526,7 @@ export function OrderDetailsSidebar({
                             {/* Edit Client Dialog */}
                             <Dialog open={editClientDialogOpen} onOpenChange={setEditClientDialogOpen}>
                                 <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                                    <DialogTitle><VisuallyHidden>Editează Client</VisuallyHidden></DialogTitle>
                                     <DialogHeader>
                                         <DialogTitle>Editează Client</DialogTitle>
                                     </DialogHeader>
