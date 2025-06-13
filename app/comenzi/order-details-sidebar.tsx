@@ -12,11 +12,17 @@ import { toast } from "sonner";
 import type { Order } from "./orders-table";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { ClientForm } from "@/app/clienti/client-form";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { AddressDialog } from "./components/AddressDialog";
+import { EditClientDialog } from "./components/EditClientDialog";
+import { AddClientDialog } from "./components/AddClientDialog";
+import { StatusSelector } from "./components/StatusSelector";
+import { ClientSelector } from "./components/ClientSelector";
+import { AddressSelector } from "./components/AddressSelector";
+import { OrderFinancials } from "./components/OrderFinancials";
+import { OrderItemsTab } from "./components/OrderItemsTab";
+import { OrderDetailsTab } from "./components/OrderDetailsTab";
+
 interface OrderStatus {
     id: number;
     name: string;
@@ -45,58 +51,6 @@ interface OrderDetailsSidebarProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onOrderUpdated?: () => void;
-}
-
-// AddressDialog component (inline for now)
-function AddressDialog({ open, onOpenChange, initial, onSave, loading }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    initial?: { adresa: string; detalii?: string };
-    onSave: (adresa: string, detalii: string) => Promise<void>;
-    loading?: boolean;
-}) {
-    const [adresa, setAdresa] = useState(initial?.adresa || "");
-    const [detalii, setDetalii] = useState(initial?.detalii || "");
-    const [saving, setSaving] = useState(false);
-    useEffect(() => {
-        setAdresa(initial?.adresa || "");
-        setDetalii(initial?.detalii || "");
-    }, [initial, open]);
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{initial ? "Editează adresa" : "Adaugă adresă nouă"}</DialogTitle>
-                    <DialogDescription>
-                        Completează adresa și detaliile suplimentare (bloc, scară, apartament, etc).
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Adresă</label>
-                        <Input value={adresa} onChange={e => setAdresa(e.target.value)} placeholder="Strada, număr..." required disabled={saving || loading} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Detalii</label>
-                        <Input value={detalii} onChange={e => setDetalii(e.target.value)} placeholder="Bloc, scară, apartament, etaj, interfon, etc" disabled={saving || loading} />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={saving || loading}>Anulează</Button>
-                    </DialogClose>
-                    <Button type="button" onClick={async () => {
-                        setSaving(true);
-                        await onSave(adresa, detalii);
-                        setSaving(false);
-                        onOpenChange(false);
-                    }} disabled={saving || loading || !adresa.trim()}>
-                        Salvează
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
 }
 
 export function OrderDetailsSidebar({
@@ -361,419 +315,45 @@ export function OrderDetailsSidebar({
                         <TabsTrigger value="items" className="flex-1">Articole</TabsTrigger>
                     </TabsList>
                     <TabsContent value="details" className="flex flex-col h-full">
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                            {/* First row: order #, date */}
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <span className="text-lg font-semibold">#{order.id}</span>
-                                <span className="text-sm text-muted-foreground">
-                                    {new Date(order.date_created).toLocaleDateString("ro-RO")}
-                                </span>
-                            </div>
-                            {/* Second row: urgent and status selectors */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <Select
-                                    defaultValue={order.urgent ? "urgent" : "normal"}
-                                    onValueChange={handleUrgencyChange}
-                                    disabled={isLoading}
-                                >
-                                    <SelectTrigger className="w-[110px]">
-                                        <SelectValue placeholder="Urgenta" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="normal">Normal</SelectItem>
-                                        <SelectItem value="urgent">Urgent</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <div className="flex-1 min-w-[180px]">
-                                    <Select
-                                        defaultValue={order.status || undefined}
-                                        onValueChange={handleStatusChange}
-                                        disabled={isLoading}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selectează status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {statuses.map((status) => (
-                                                <SelectItem key={status.name} value={status.name}>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge className={`${status.color} text-white`}>
-                                                            {status.label}
-                                                        </Badge>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            {/* Client selector */}
-                            <div className="flex flex-col gap-1 w-full">
-                                <span className="text-sm font-medium">Client</span>
-                                {order.customers ? (
-                                    <div className="flex w-full gap-2 items-stretch">
-                                        <div className="flex-1 border rounded-md px-3 py-2 bg-background flex flex-col gap-1 justify-center">
-                                            <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                <User className="w-3.5 h-3.5" />
-                                                <span>{order.customers.prenume} {order.customers.nume}</span>
-                                            </Badge>
-                                            <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                <Phone className="w-3.5 h-3.5" />
-                                                <span>{order.customers.telefon}</span>
-                                            </Badge>
-                                            {order.customers.email && (
-                                                <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                    <span>{order.customers.email}</span>
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col gap-2 h-full justify-center" style={{ minWidth: 48 }}>
-                                            <Button size="icon" variant="outline" onClick={() => setEditClientDialogOpen(true)}>
-                                                <Pencil className="w-4 h-4" />
-                                            </Button>
-                                            <Button size="icon" variant="outline" onClick={async () => {
-                                                await handleClearClient();
-                                                if (typeof onOrderUpdated === "function") onOrderUpdated();
-                                            }}>
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-start gap-2 w-full">
-                                        <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                                            <PopoverTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className="w-full border rounded-md px-3 py-2 text-left bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
-                                                >
-                                                    <span className="text-muted-foreground">Selectează client</span>
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Search className="w-4 h-4 text-muted-foreground" />
-                                                    <Input
-                                                        value={customerSearch}
-                                                        onChange={e => setCustomerSearch(e.target.value)}
-                                                        placeholder="Caută după nume, email, telefon"
-                                                        className="h-8"
-                                                        autoFocus
-                                                    />
-                                                </div>
-                                                <div className="max-h-64 overflow-y-auto space-y-2">
-                                                    {filteredCustomers.length === 0 && (
-                                                        <div className="text-muted-foreground text-sm px-2 py-4 text-center">Niciun client găsit</div>
-                                                    )}
-                                                    {filteredCustomers.map(c => (
-                                                        <button
-                                                            key={c.id}
-                                                            type="button"
-                                                            className={cn(
-                                                                "w-full text-left rounded-md px-2 py-2 hover:bg-accent",
-                                                                order.customer_id === c.id && "bg-accent"
-                                                            )}
-                                                            onClick={async () => {
-                                                                setCustomerPopoverOpen(false);
-                                                                await handleCustomerChange(c.id);
-                                                            }}
-                                                        >
-                                                            <div className="flex flex-col gap-1">
-                                                                <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                                    <User className="w-3.5 h-3.5" />
-                                                                    <span>{c.prenume} {c.nume}</span>
-                                                                </Badge>
-                                                                <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                                    <Phone className="w-3.5 h-3.5" />
-                                                                    <span>{c.telefon}</span>
-                                                                </Badge>
-                                                                {c.email && (
-                                                                    <Badge variant="secondary" className="flex items-center gap-1.5">
-                                                                        <Mail className="w-3.5 h-3.5" />
-                                                                        <span>{c.email}</span>
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
-                                        <Button size="icon" variant="ghost" className="mt-1" onClick={() => setAddClientDialogOpen(true)}>
-                                            <Plus className="w-4 h-4" />
-                                        </Button>
-                                        {/* Add Client Dialog */}
-                                        <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
-                                            <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                                                <DialogTitle><VisuallyHidden>Adaugă Client Nou</VisuallyHidden></DialogTitle>
-                                                <DialogHeader>
-                                                    <DialogTitle>Adaugă Client Nou</DialogTitle>
-                                                </DialogHeader>
-                                                <ClientForm
-                                                    mode="create"
-                                                    onSuccess={() => {
-                                                        setAddClientDialogOpen(false);
-                                                        setRefreshClient(x => x + 1);
-                                                    }}
-                                                />
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                )}
-                            </div>
-                            {/* Edit Client Dialog */}
-                            <Dialog open={editClientDialogOpen} onOpenChange={setEditClientDialogOpen}>
-                                <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                                    <DialogTitle><VisuallyHidden>Editează Client</VisuallyHidden></DialogTitle>
-                                    <DialogHeader>
-                                        <DialogTitle>Editează Client</DialogTitle>
-                                    </DialogHeader>
-                                    <ClientForm
-                                        mode="edit"
-                                        initialValues={
-                                            order && order.customers
-                                                ? {
-                                                    id: order.customers.id,
-                                                    prenume: order.customers.prenume ?? "",
-                                                    nume: order.customers.nume ?? "",
-                                                    email: order.customers.email ?? "",
-                                                    telefon: order.customers.telefon ?? "",
-                                                    accept_marketing_sms: order.customers.accept_marketing_sms ?? false,
-                                                    accept_marketing_email: order.customers.accept_marketing_email ?? false,
-                                                }
-                                                : undefined
-                                        }
-                                        onSuccess={() => {
-                                            setEditClientDialogOpen(false);
-                                            setRefreshClient(x => x + 1);
-                                            if (typeof onOrderUpdated === "function") onOrderUpdated();
-                                        }}
-                                    />
-                                </DialogContent>
-                            </Dialog>
-                            {/* Pickup address selector */}
-                            <div className="flex flex-col gap-1 w-full">
-                                <span className="text-sm font-medium">Ridicare</span>
-                                <Popover open={pickupPopoverOpen} onOpenChange={setPickupPopoverOpen}>
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className={cn(
-                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent text-sm",
-                                                !order.customers && "opacity-50 cursor-not-allowed"
-                                            )}
-                                            disabled={!order.customers}
-                                            onClick={() => setPickupPopoverOpen(true)}
-                                        >
-                                            {order && order.adresa_colectare_id && addresses.length > 0 ? (
-                                                (() => {
-                                                    const addr = addresses.find(a => String(a.id) === String(order.adresa_colectare_id));
-                                                    return addr ? (
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="font-medium">{addr.adresa}</span>
-                                                            {addr.detalii && <span className="text-xs text-muted-foreground">{addr.detalii}</span>}
-                                                        </div>
-                                                    ) : <span className="text-muted-foreground">Adresă necunoscută</span>;
-                                                })()
-                                            ) : (
-                                                <span className="text-muted-foreground">În magazin</span>
-                                            )}
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
-                                        <div className="space-y-2 max-h-64 overflow-y-auto max-w-full">
-                                            <button
-                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", !order.adresa_colectare_id && "bg-accent")}
-                                                onClick={() => {
-                                                    handlePickupAddressChange("null");
-                                                    setPickupPopoverOpen(false);
-                                                }}
-                                            >
-                                                În magazin
-                                            </button>
-                                            {addresses.map(addr => (
-                                                <button
-                                                    key={addr.id}
-                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", order.adresa_colectare_id === addr.id && "bg-accent")}
-                                                    onClick={() => {
-                                                        handlePickupAddressChange(String(addr.id));
-                                                        setPickupPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <div className="font-medium">{addr.adresa}</div>
-                                                    {addr.detalii && <div className="text-xs text-muted-foreground">{addr.detalii}</div>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            {/* Delivery address selector */}
-                            <div className="flex flex-col gap-1 w-full">
-                                <span className="text-sm font-medium">Livrare</span>
-                                <Popover open={deliveryPopoverOpen} onOpenChange={setDeliveryPopoverOpen}>
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className={cn(
-                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent text-sm",
-                                                !order.customers && "opacity-50 cursor-not-allowed"
-                                            )}
-                                            disabled={!order.customers}
-                                            onClick={() => setDeliveryPopoverOpen(true)}
-                                        >
-                                            {order && order.adresa_returnare_id && addresses.length > 0 ? (
-                                                (() => {
-                                                    const addr = addresses.find(a => String(a.id) === String(order.adresa_returnare_id));
-                                                    return addr ? (
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="font-medium">{addr.adresa}</span>
-                                                            {addr.detalii && <span className="text-xs text-muted-foreground">{addr.detalii}</span>}
-                                                        </div>
-                                                    ) : <span className="text-muted-foreground">Adresă necunoscută</span>;
-                                                })()
-                                            ) : (
-                                                <span className="text-muted-foreground">În magazin</span>
-                                            )}
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
-                                        <div className="space-y-2 max-h-64 overflow-y-auto max-w-full">
-                                            <button
-                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", !order.adresa_returnare_id && "bg-accent")}
-                                                onClick={() => {
-                                                    handleDeliveryAddressChange("null");
-                                                    setDeliveryPopoverOpen(false);
-                                                }}
-                                            >
-                                                În magazin
-                                            </button>
-                                            {addresses.map(addr => (
-                                                <button
-                                                    key={addr.id}
-                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", order.adresa_returnare_id === addr.id && "bg-accent")}
-                                                    onClick={() => {
-                                                        handleDeliveryAddressChange(String(addr.id));
-                                                        setDeliveryPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <div className="font-medium">{addr.adresa}</div>
-                                                    {addr.detalii && <div className="text-xs text-muted-foreground">{addr.detalii}</div>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
+                        <OrderDetailsTab
+                            order={order}
+                            statuses={statuses}
+                            isLoading={isLoading}
+                            onUrgencyChange={handleUrgencyChange}
+                            onStatusChange={handleStatusChange}
+                            customersList={customersList}
+                            customerPopoverOpen={customerPopoverOpen}
+                            setCustomerPopoverOpen={setCustomerPopoverOpen}
+                            customerSearch={customerSearch}
+                            setCustomerSearch={setCustomerSearch}
+                            onCustomerChange={handleCustomerChange}
+                            onClearClient={handleClearClient}
+                            onOrderUpdated={onOrderUpdated}
+                            refreshClient={() => setRefreshClient(x => x + 1)}
+                            addresses={addresses}
+                            pickupPopoverOpen={pickupPopoverOpen}
+                            setPickupPopoverOpen={setPickupPopoverOpen}
+                            deliveryPopoverOpen={deliveryPopoverOpen}
+                            setDeliveryPopoverOpen={setDeliveryPopoverOpen}
+                            onPickupChange={handlePickupAddressChange}
+                            onDeliveryChange={handleDeliveryAddressChange}
+                            formatDate={formatDate}
+                        />
                     </TabsContent>
                     <TabsContent value="items" className="flex-1">
-                        {/* Scrollable Content: Order Items and Financials */}
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="p-6 space-y-6">
-                                {/* Order Items */}
-                                <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                                        <Package className="w-4 h-4" />
-                                        Articole Comandă
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {order.order_services.map((item) => (
-                                            <div key={item.id} className="border rounded-lg p-3 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="font-medium">{item.services.name}</p>
-                                                        <div className="flex gap-2 mt-1">
-                                                            <Badge variant="outline">{item.services.categories.name}</Badge>
-                                                            <Badge variant="outline">{item.services.service_types.name}</Badge>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {item.quantity} x {formatCurrency(item.price)} lei
-                                                        </p>
-                                                        <p className="font-bold">{formatCurrency(item.subtotal)} lei</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                {/* Notes */}
-                                {order.notes && (
-                                    <>
-                                        <Separator />
-                                        <div className="space-y-4">
-                                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                                <FileText className="w-4 h-4" />
-                                                Note
-                                            </h3>
-                                            <p className="whitespace-pre-wrap">{order.notes}</p>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                        <OrderItemsTab order={order} formatCurrency={formatCurrency} />
                     </TabsContent>
                 </Tabs>
-                {/* Persistent Sticky Footer: Financials */}
-                <div className="sticky bottom-0 z-10 bg-background border-t">
-                    <div className="p-4 space-y-3">
-                        {/* Subtotal */}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>Subtotal</span>
-                            <span>{formatCurrency(order.total_comanda_fara_discount)} lei</span>
-                        </div>
-                        {/* Discount & Payment Method */}
-                        <div className="flex items-center justify-between gap-2">
-                            <Select
-                                defaultValue={order.payment_method || undefined}
-                                onValueChange={handlePaymentMethodChange}
-                                disabled={isLoading}
-                            >
-                                <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="Metodă plată" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {PAYMENT_METHODS.map((method) => (
-                                        <SelectItem key={method.value} value={method.value}>
-                                            {method.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <div className="flex items-center gap-2 flex-1">
-                                <Select
-                                    defaultValue={currentDiscount.toString()}
-                                    onValueChange={handleDiscountChange}
-                                    disabled={isLoading}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Discount" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {DISCOUNT_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value.toString()}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {currentDiscount > 0 && (
-                                    <span className="text-sm text-orange-500 whitespace-nowrap">
-                                        -{formatCurrency(order.total_comanda_fara_discount - order.total_comanda_cu_discount)} lei
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                        {/* Total */}
-                        <div className="flex items-center justify-between pt-2 border-t">
-                            <span className="font-medium">Total</span>
-                            <span className="text-lg font-semibold">{formatCurrency(order.total_comanda_cu_discount)} lei</span>
-                        </div>
-                    </div>
-                </div>
+                <OrderFinancials
+                    order={order}
+                    isLoading={isLoading}
+                    currentDiscount={currentDiscount}
+                    onPaymentMethodChange={handlePaymentMethodChange}
+                    onDiscountChange={handleDiscountChange}
+                    PAYMENT_METHODS={PAYMENT_METHODS}
+                    DISCOUNT_OPTIONS={DISCOUNT_OPTIONS}
+                    formatCurrency={formatCurrency}
+                />
             </SheetContent>
         </Sheet>
     );
