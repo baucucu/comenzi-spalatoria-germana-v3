@@ -44,6 +44,8 @@ interface Customer {
     prenume: string;
     email: string;
     telefon: string;
+    accept_marketing_sms?: boolean;
+    accept_marketing_email?: boolean;
 }
 
 interface Discount {
@@ -77,6 +79,8 @@ export interface Order {
     payment_status: string | null;
     payment_method: string | null;
     notes: string | null;
+    adresa_colectare_id?: number | null;
+    adresa_returnare_id?: number | null;
     order_services: OrderService[];
     customers: Customer | null;
 }
@@ -156,6 +160,37 @@ export function OrdersTable({
     const handleOrderClick = (order: Order) => {
         setSelectedOrder(order);
         setIsSheetOpen(true);
+    };
+
+    // Refresh selected order from DB
+    const refreshSelectedOrder = async () => {
+        if (!selectedOrder) return;
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from("orders")
+            .select(`
+                *,
+                order_services (
+                    *,
+                    services (
+                        *,
+                        categories (name),
+                        service_types (name)
+                    )
+                ),
+                customers (
+                    id,
+                    nume,
+                    prenume,
+                    email,
+                    telefon,
+                    accept_marketing_sms,
+                    accept_marketing_email
+                )
+            `)
+            .eq("id", selectedOrder.id)
+            .single();
+        if (data) setSelectedOrder(data);
     };
 
     return (
@@ -289,6 +324,7 @@ export function OrdersTable({
                 order={selectedOrder}
                 isOpen={isSheetOpen}
                 onOpenChange={setIsSheetOpen}
+                onOrderUpdated={refreshSelectedOrder}
             />
         </div>
     );

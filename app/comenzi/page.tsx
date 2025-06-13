@@ -25,7 +25,9 @@ export default async function ComenziPage({ searchParams }: { searchParams: { [k
                 nume,
                 prenume,
                 email,
-                telefon
+                telefon,
+                accept_marketing_sms,
+                accept_marketing_email
             )
         `)
         .order("date_created", { ascending: false })
