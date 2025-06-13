@@ -272,44 +272,6 @@ export function OrderDetailsSidebar({
                             </div>
                         </div>
 
-                        <Separator />
-
-                        {/* Important Dates */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                Date Importante
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Creat La</p>
-                                    <p>{formatDate(order.date_created)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Data Ridicare</p>
-                                    <p>{formatDate(order.pickup_date)}</p>
-                                </div>
-                                {order.actual_pickup_date && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Ridicat La</p>
-                                        <p>{formatDate(order.actual_pickup_date)}</p>
-                                    </div>
-                                )}
-                                {order.delivery_date && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Data Livrare</p>
-                                        <p>{formatDate(order.delivery_date)}</p>
-                                    </div>
-                                )}
-                                {order.actual_delivery_date && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Livrat La</p>
-                                        <p>{formatDate(order.actual_delivery_date)}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Notes */}
                         {order.notes && (
                             <>
