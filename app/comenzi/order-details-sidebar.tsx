@@ -362,7 +362,7 @@ export function OrderDetailsSidebar({
                         <TabsTrigger value="items" className="flex-1">Articole</TabsTrigger>
                     </TabsList>
                     <TabsContent value="details" className="flex-1">
-                        <div className="p-4 space-y-3">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {/* First row: order #, date */}
                             <div className="flex items-center gap-3 flex-wrap">
                                 <span className="text-lg font-semibold">#{order.id}</span>
@@ -452,7 +452,7 @@ export function OrderDetailsSidebar({
                                                     <span className="text-muted-foreground">Selectează client</span>
                                                 </button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-[320px] p-2">
+                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Search className="w-4 h-4 text-muted-foreground" />
                                                     <Input
@@ -561,7 +561,7 @@ export function OrderDetailsSidebar({
                                         <button
                                             type="button"
                                             className={cn(
-                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent",
+                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent text-sm",
                                                 !order.customers && "opacity-50 cursor-not-allowed"
                                             )}
                                             disabled={!order.customers}
@@ -582,10 +582,10 @@ export function OrderDetailsSidebar({
                                             )}
                                         </button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-full max-w-md p-2">
-                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
+                                        <div className="space-y-2 max-h-64 overflow-y-auto max-w-full">
                                             <button
-                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", !order.adresa_colectare_id && "bg-accent")}
+                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", !order.adresa_colectare_id && "bg-accent")}
                                                 onClick={() => {
                                                     handlePickupAddressChange("null");
                                                     setPickupPopoverOpen(false);
@@ -596,7 +596,7 @@ export function OrderDetailsSidebar({
                                             {addresses.map(addr => (
                                                 <button
                                                     key={addr.id}
-                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", order.adresa_colectare_id === addr.id && "bg-accent")}
+                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", order.adresa_colectare_id === addr.id && "bg-accent")}
                                                     onClick={() => {
                                                         handlePickupAddressChange(String(addr.id));
                                                         setPickupPopoverOpen(false);
@@ -618,7 +618,7 @@ export function OrderDetailsSidebar({
                                         <button
                                             type="button"
                                             className={cn(
-                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent",
+                                                "w-full border rounded-md p-3 text-left bg-muted hover:bg-accent text-sm",
                                                 !order.customers && "opacity-50 cursor-not-allowed"
                                             )}
                                             disabled={!order.customers}
@@ -639,10 +639,10 @@ export function OrderDetailsSidebar({
                                             )}
                                         </button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-full max-w-md p-2">
-                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-full p-2 text-sm overflow-x-auto">
+                                        <div className="space-y-2 max-h-64 overflow-y-auto max-w-full">
                                             <button
-                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", !order.adresa_returnare_id && "bg-accent")}
+                                                className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", !order.adresa_returnare_id && "bg-accent")}
                                                 onClick={() => {
                                                     handleDeliveryAddressChange("null");
                                                     setDeliveryPopoverOpen(false);
@@ -653,7 +653,7 @@ export function OrderDetailsSidebar({
                                             {addresses.map(addr => (
                                                 <button
                                                     key={addr.id}
-                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent", order.adresa_returnare_id === addr.id && "bg-accent")}
+                                                    className={cn("w-full text-left rounded-md px-2 py-2 hover:bg-accent text-sm", order.adresa_returnare_id === addr.id && "bg-accent")}
                                                     onClick={() => {
                                                         handleDeliveryAddressChange(String(addr.id));
                                                         setDeliveryPopoverOpen(false);
