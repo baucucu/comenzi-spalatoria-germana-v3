@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { ClientForm } from "@/app/clienti/client-form";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-
 interface OrderStatus {
     id: number;
     name: string;
@@ -361,7 +360,7 @@ export function OrderDetailsSidebar({
                         <TabsTrigger value="details" className="flex-1">Detalii comandă</TabsTrigger>
                         <TabsTrigger value="items" className="flex-1">Articole</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="details" className="flex-1">
+                    <TabsContent value="details" className="flex flex-col h-full">
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {/* First row: order #, date */}
                             <div className="flex items-center gap-3 flex-wrap">
