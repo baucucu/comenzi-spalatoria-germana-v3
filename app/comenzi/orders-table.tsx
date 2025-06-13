@@ -66,7 +66,7 @@ export interface Order {
     id: number;
     date_created: string;
     status: string | null;
-    total_comanda: number;
+    total_comanda_fara_discount: number;
     total_comanda_cu_discount: number;
     customer_id: string | null;
     urgent: boolean | null;

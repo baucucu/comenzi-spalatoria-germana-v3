@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import type { Order } from "./orders-table";
+import { cn } from "@/lib/utils";
 
 interface OrderStatus {
     id: number;
@@ -23,7 +24,7 @@ interface OrderStatus {
 const PAYMENT_METHODS = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
-    { value: "transfer", label: "Transfer bancar" },
+    { value: "OP", label: "Transfer bancar" },
 ];
 
 const DISCOUNT_OPTIONS = [
@@ -100,6 +101,7 @@ export function OrderDetailsSidebar({
         setIsLoading(false);
 
         if (error) {
+            console.error("Error updating payment method:", error);
             toast.error("Nu am putut actualiza metoda de plată");
             return;
         }
@@ -111,17 +113,20 @@ export function OrderDetailsSidebar({
         if (!order) return;
 
         const discount = parseInt(discountPercent, 10);
-        const newTotal = order.total_comanda * (1 - discount / 100);
+        const newTotal = order.total_comanda_fara_discount * (1 - discount / 100);
 
         setIsLoading(true);
         const { error } = await supabase
             .from("orders")
-            .update({ total_comanda_cu_discount: newTotal })
+            .update({
+                total_comanda_cu_discount: newTotal
+            })
             .eq("id", order.id);
 
         setIsLoading(false);
 
         if (error) {
+            console.error("Error applying discount:", error);
             toast.error("Nu am putut aplica discountul");
             return;
         }
@@ -149,8 +154,8 @@ export function OrderDetailsSidebar({
         });
     };
 
-    const currentDiscount = order.total_comanda !== order.total_comanda_cu_discount
-        ? Math.round((1 - order.total_comanda_cu_discount / order.total_comanda) * 100)
+    const currentDiscount = order.total_comanda_fara_discount !== order.total_comanda_cu_discount
+        ? Math.round((1 - order.total_comanda_cu_discount / order.total_comanda_fara_discount) * 100)
         : 0;
 
     return (
@@ -158,23 +163,46 @@ export function OrderDetailsSidebar({
             <SheetContent className="flex flex-col p-0 w-full sm:max-w-xl">
                 {/* Sticky Header */}
                 <div className="sticky top-0 z-10 bg-background border-b">
-                    <div className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                    <SheetTitle className="text-xl">#{order.id}</SheetTitle>
-                                    {order.urgent && (
-                                        <Badge variant="outline" className="text-orange-500 border-orange-500">
-                                            <AlertTriangle className="w-3.5 h-3.5" />
-                                        </Badge>
-                                    )}
-                                </div>
+                    <div className="p-4 space-y-4">
+                        {/* First row */}
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg font-semibold">#{order.id}</span>
+                                <span className="text-sm text-muted-foreground">
+                                    {new Date(order.date_created).toLocaleDateString("ro-RO")}
+                                </span>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    "h-8 w-8",
+                                    order.urgent ? "text-orange-500" : "text-muted-foreground"
+                                )}
+                                onClick={async () => {
+                                    setIsLoading(true);
+                                    const { error } = await supabase
+                                        .from("orders")
+                                        .update({ urgent: !order.urgent })
+                                        .eq("id", order.id);
+                                    setIsLoading(false);
+                                    if (error) {
+                                        toast.error("Nu am putut actualiza statusul urgent");
+                                        return;
+                                    }
+                                    toast.success("Status urgent actualizat");
+                                }}
+                                disabled={isLoading}
+                            >
+                                <AlertTriangle className={cn("h-5 w-5", order.urgent && "fill-current")} />
+                            </Button>
+                            <div className="flex-1">
                                 <Select
                                     defaultValue={order.status || undefined}
                                     onValueChange={handleStatusChange}
                                     disabled={isLoading}
                                 >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger>
                                         <SelectValue placeholder="Selectează status" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -190,24 +218,25 @@ export function OrderDetailsSidebar({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            {order.customers && (
-                                <div className="text-right space-y-1">
-                                    <p className="font-medium">
-                                        {order.customers.prenume} {order.customers.nume}
-                                    </p>
-                                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                                        <div className="flex items-center justify-end gap-1.5">
-                                            <Phone className="w-3.5 h-3.5" />
-                                            <span>{order.customers.telefon}</span>
-                                        </div>
-                                        <div className="flex items-center justify-end gap-1.5">
-                                            <Mail className="w-3.5 h-3.5" />
-                                            <span>{order.customers.email}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+
+                        {/* Second row - Customer info */}
+                        {order.customers && (
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="secondary" className="flex items-center gap-1.5">
+                                    <User className="w-3.5 h-3.5" />
+                                    <span>{order.customers.prenume} {order.customers.nume}</span>
+                                </Badge>
+                                <Badge variant="secondary" className="flex items-center gap-1.5">
+                                    <Phone className="w-3.5 h-3.5" />
+                                    <span>{order.customers.telefon}</span>
+                                </Badge>
+                                <Badge variant="secondary" className="flex items-center gap-1.5">
+                                    <Mail className="w-3.5 h-3.5" />
+                                    <span>{order.customers.email}</span>
+                                </Badge>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -300,38 +329,14 @@ export function OrderDetailsSidebar({
                 {/* Sticky Footer */}
                 <div className="sticky bottom-0 z-10 bg-background border-t">
                     <div className="p-4 space-y-3">
+                        {/* First row - Subtotal */}
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <span>Subtotal</span>
-                            <span>{formatCurrency(order.total_comanda)} lei</span>
+                            <span>{formatCurrency(order.total_comanda_fara_discount)} lei</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <Select
-                                defaultValue={currentDiscount.toString()}
-                                onValueChange={handleDiscountChange}
-                                disabled={isLoading}
-                            >
-                                <SelectTrigger className="w-[120px]">
-                                    <SelectValue placeholder="Discount" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {DISCOUNT_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={option.value.toString()}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {currentDiscount > 0 && (
-                                <span className="text-sm text-orange-500">
-                                    -{formatCurrency(order.total_comanda - order.total_comanda_cu_discount)} lei
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center justify-between font-medium">
-                            <span>Total</span>
-                            <span className="text-lg">{formatCurrency(order.total_comanda_cu_discount)} lei</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm pt-2 border-t">
+
+                        {/* Second row - Discount & Payment Method */}
+                        <div className="flex items-center justify-between gap-2">
                             <Select
                                 defaultValue={order.payment_method || undefined}
                                 onValueChange={handlePaymentMethodChange}
@@ -348,11 +353,37 @@ export function OrderDetailsSidebar({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {order.payment_method && (
-                                <Badge variant="outline" className="font-medium">
-                                    {PAYMENT_METHODS.find(m => m.value === order.payment_method)?.label || order.payment_method}
-                                </Badge>
-                            )}
+
+                            <div className="flex items-center gap-2 flex-1">
+                                <Select
+                                    defaultValue={currentDiscount.toString()}
+                                    onValueChange={handleDiscountChange}
+                                    disabled={isLoading}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Discount" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DISCOUNT_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value.toString()}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {currentDiscount > 0 && (
+                                    <span className="text-sm text-orange-500 whitespace-nowrap">
+                                        -{formatCurrency(order.total_comanda_fara_discount - order.total_comanda_cu_discount)} lei
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Third row - Total */}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                            <span className="font-medium">Total</span>
+                            <span className="text-lg font-semibold">{formatCurrency(order.total_comanda_cu_discount)} lei</span>
                         </div>
                     </div>
                 </div>
