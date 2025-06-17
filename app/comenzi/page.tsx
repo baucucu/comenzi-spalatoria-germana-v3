@@ -3,7 +3,7 @@ import { PageContentWrapper } from "@/components/ui/page-content-wrapper";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -235,8 +235,8 @@ export default function ComenziPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search, sidebarOpen]);
 
-    // Save (add or edit)
-    const handleSaveOrder = async () => {
+    // Save (add or edit). If silent=true, don't close sidebar or show toast.
+    const handleSaveOrder = async (silent: boolean = false) => {
         setSaving(true);
         const supabase = createClient();
         let order_id = orderId;
@@ -252,6 +252,7 @@ export default function ComenziPage() {
                 adresa_returnare_id: form.adresa_returnare_id,
                 urgent: form.urgent,
                 payment_method: form.payment_method,
+                discount: parseFloat(form.discount || '0'),
                 notes: form.notes,
                 data_comanda: form.data_comanda,
                 data_colectare: form.data_colectare,
@@ -269,6 +270,7 @@ export default function ComenziPage() {
                 adresa_returnare_id: form.adresa_returnare_id,
                 urgent: form.urgent,
                 payment_method: form.payment_method,
+                discount: parseFloat(form.discount || '0'),
                 notes: form.notes,
                 data_comanda: form.data_comanda,
                 data_colectare: form.data_colectare,
@@ -278,7 +280,7 @@ export default function ComenziPage() {
         }
         if (orderRes.error || !order_id) {
             setSaving(false);
-            toast.error("Eroare la salvare comandă: " + orderRes.error?.message);
+            if (!silent) toast.error("Eroare la salvare comandă: " + orderRes.error?.message);
             return;
         }
         // Upsert order_services
@@ -315,10 +317,27 @@ export default function ComenziPage() {
             }
         }
         setSaving(false);
-        toast.success(editingOrder ? "Comanda a fost actualizată!" : "Comanda a fost adăugată!");
-        setSidebarOpen(false);
+        if (!silent) {
+            toast.success(editingOrder ? "Comanda a fost actualizată!" : "Comanda a fost adăugată!");
+            setSidebarOpen(false);
+        }
         fetchOrders(); // Refresh orders after save
     };
+
+    // Autosave on any change (debounced)
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (!sidebarOpen) return;
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        const timeout = setTimeout(() => {
+            handleSaveOrder(true);
+        }, 800);
+        return () => clearTimeout(timeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form, items]);
 
     // Fetch services
     const fetchServices = async () => {
@@ -459,7 +478,7 @@ export default function ComenziPage() {
                             </header>
 
                             {/* Main scroll area (row-2) */}
-                            <main className="overflow-y-auto px-4 py-4 space-y-4">
+                            <main className="overflow-y-auto px-4 space-y-4 flex-1">
                                 <TabsContent value="detalii" className="flex flex-col gap-4">
                                     {/* Card 1: Status comanda */}
                                     <Card className="p-4 flex flex-col gap-2">
@@ -632,18 +651,27 @@ export default function ComenziPage() {
 
                             {/* Footer (row-3) */}
                             <footer className="border-t px-4 py-4 bg-background/90 backdrop-blur flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">Subtotal:</span>
-                                    <span>{/* Calculate and display order subtotal */}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="font-bold">Total:</span>
-                                    <span>{/* Calculate and display order total */}</span>
-                                </div>
-                                <div className="flex justify-end gap-2 mt-2">
-                                    <Button variant="outline" onClick={() => setSidebarOpen(false)}>Anulează</Button>
-                                    <Button onClick={handleSaveOrder} disabled={saving}>{saving ? (editingOrder ? "Se salvează..." : "Se adaugă...") : (editingOrder ? "Salvează" : "Adaugă")}</Button>
-                                </div>
+                                {(() => {
+                                    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+                                    const discountVal = parseFloat(form.discount || '0') || 0;
+                                    const total = subtotal - discountVal;
+                                    return (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-semibold">Subtotal:</span>
+                                                <span>{subtotal.toFixed(2)} RON</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-semibold">Discount:</span>
+                                                <span>- {discountVal.toFixed(2)} RON</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold">Total:</span>
+                                                <span>{total.toFixed(2)} RON</span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </footer>
                         </Tabs>
                     </SheetContent>
