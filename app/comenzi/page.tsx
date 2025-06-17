@@ -107,7 +107,7 @@ export default function ComenziPage() {
     }, []);
 
     // Sidebar form state
-    const [form, setForm] = useState({ customer: "", status: "", total: "", date: "", adresa_colectare_id: undefined as number | undefined, adresa_returnare_id: undefined as number | undefined, urgent: false, payment_method: '', notes: '', data_comanda: '', data_colectare: '', data_returnare: '' });
+    const [form, setForm] = useState({ customer: "", status: "", total: "", date: "", adresa_colectare_id: undefined as number | undefined, adresa_returnare_id: undefined as number | undefined, urgent: false, payment_method: '', discount: '', notes: '', data_comanda: '', data_colectare: '', data_returnare: '' });
     const [saving, setSaving] = useState(false);
 
     // Fetch customers (with search)
@@ -145,7 +145,7 @@ export default function ComenziPage() {
     const handleAddOrder = () => {
         setEditingOrder(null);
         setOrderId(null);
-        setForm({ customer: "", status: "", total: "", date: "", adresa_colectare_id: undefined, adresa_returnare_id: undefined, urgent: false, payment_method: '', notes: '', data_comanda: '', data_colectare: '', data_returnare: '' });
+        setForm({ customer: "", status: "", total: "", date: "", adresa_colectare_id: undefined, adresa_returnare_id: undefined, urgent: false, payment_method: '', discount: '', notes: '', data_comanda: '', data_colectare: '', data_returnare: '' });
         setItems([]);
         setSidebarOpen(true);
     };
@@ -162,6 +162,7 @@ export default function ComenziPage() {
             adresa_returnare_id: order.adresa_returnare_id,
             urgent: order.urgent || false,
             payment_method: order.payment_method || '',
+            discount: '',
             notes: order.notes || '',
             data_comanda: order.data_comanda || '',
             data_colectare: order.data_colectare || '',
@@ -555,6 +556,25 @@ export default function ComenziPage() {
                                             </div>
                                         )}
                                     </Card>
+                                    {/* Card 4: Metodă plată */}
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <Label>Metodă plată</Label>
+                                        <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selectează metodă plată..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="cash">Cash</SelectItem>
+                                                <SelectItem value="card">Card</SelectItem>
+                                                <SelectItem value="OP">OP</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </Card>
+                                    {/* Card 5: Discount */}
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <Label>Discount (RON)</Label>
+                                        <Input type="number" min={0} value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} placeholder="Introduceti discount..." />
+                                    </Card>
                                 </TabsContent>
                                 <TabsContent value="articole" className="flex flex-col gap-4">
                                     <Card className="p-4 flex flex-col gap-2">
@@ -615,20 +635,6 @@ export default function ComenziPage() {
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold">Subtotal:</span>
                                     <span>{/* Calculate and display order subtotal */}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Label>Metodă plată</Label>
-                                    <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                                        <SelectTrigger className="w-32">
-                                            <SelectValue placeholder="Metodă..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="cash">Cash</SelectItem>
-                                            <SelectItem value="card">Card</SelectItem>
-                                            <SelectItem value="OP">OP</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {/* Discount selector placeholder */}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="font-bold">Total:</span>
