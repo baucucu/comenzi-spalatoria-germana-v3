@@ -540,17 +540,19 @@ export default function ComenziPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'colectare' ? null : 'colectare' })}>
-                                                {addAddressOpen.type === 'colectare' ? 'Anulează' : 'Adaugă adresă'}
-                                            </Button>
                                         </div>
+                                        <Button size="sm" variant={addAddressOpen.type === "colectare" ? "destructive" : "secondary"} onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'colectare' ? null : 'colectare' })}>
+                                            {addAddressOpen.type === 'colectare' ? 'Anulează' : 'Adaugă adresă'}
+                                        </Button>
                                         {addAddressOpen.type === 'colectare' && (
                                             <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                                                 <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
                                                 <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
-                                                <Button size="sm" onClick={() => handleAddAddress('colectare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
+                                                <Button size="sm" variant="default" onClick={() => handleAddAddress('colectare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
                                             </div>
                                         )}
+                                    </Card>
+                                    <Card className="p-4 flex flex-col gap-2">
                                         <Label>Adresă livrare</Label>
                                         <div className="flex gap-2 items-center">
                                             <Select value={form.adresa_returnare_id?.toString() || ''} onValueChange={v => setForm({ ...form, adresa_returnare_id: parseInt(v) })}>
@@ -563,15 +565,15 @@ export default function ComenziPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'returnare' ? null : 'returnare' })}>
-                                                {addAddressOpen.type === 'returnare' ? 'Anulează' : 'Adaugă adresă'}
-                                            </Button>
                                         </div>
+                                        <Button size="sm" variant={addAddressOpen.type === "returnare" ? "destructive" : "secondary"} onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'returnare' ? null : 'returnare' })}>
+                                            {addAddressOpen.type === 'returnare' ? 'Anulează' : 'Adaugă adresă'}
+                                        </Button>
                                         {addAddressOpen.type === 'returnare' && (
                                             <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                                                 <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
                                                 <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
-                                                <Button size="sm" onClick={() => handleAddAddress('returnare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
+                                                <Button size="sm" variant="default" onClick={() => handleAddAddress('returnare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
                                             </div>
                                         )}
                                     </Card>
