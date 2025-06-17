@@ -73,6 +73,12 @@ interface Address {
     detalii?: string;
 }
 
+interface Discount {
+    id: number;
+    name: string;
+    value: number;
+}
+
 interface StatusHistory {
     status: string;
     changed_at: string;
@@ -100,6 +106,7 @@ export default function ComenziPage() {
     const [orderId, setOrderId] = useState<number | null>(null);
     const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
     const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
+    const [discounts, setDiscounts] = useState<Discount[]>([]);
 
     useEffect(() => {
         // Fetch statuses
@@ -404,6 +411,14 @@ export default function ComenziPage() {
         setStatusHistory([{ status: order.status || '', changed_at: order.date_created }]);
     };
 
+    // Fetch discounts
+    const fetchDiscounts = async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase.from("discounts").select("id, name, value").order("value");
+        if (!error && data) setDiscounts(data);
+    };
+    useEffect(() => { if (sidebarOpen) fetchDiscounts(); }, [sidebarOpen]);
+
     return (
         <PageContentWrapper>
             <div className="flex flex-col gap-4">
@@ -643,8 +658,19 @@ export default function ComenziPage() {
                                     </Card>
                                     {/* Card 5: Discount */}
                                     <Card className="p-4 flex flex-col gap-2">
-                                        <Label>Discount (RON)</Label>
-                                        <Input type="number" min={0} value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} placeholder="Introduceti discount..." />
+                                        <Label>Discount</Label>
+                                        <Select value={form.discount.toString()} onValueChange={v => setForm({ ...form, discount: v })}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selectează discount..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {discounts.map(d => (
+                                                    <SelectItem key={d.id} value={d.value.toString()}>{d.name} - {d.value} RON</SelectItem>
+                                                ))}
+                                                {/* Option pentru niciun discount */}
+                                                <SelectItem value="0">Fără discount</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </Card>
                                 </TabsContent>
                                 <TabsContent value="articole" className="flex flex-col gap-4">
