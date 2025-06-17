@@ -443,200 +443,203 @@ export default function ComenziPage() {
                 </div>
                 {/* Right overlay sidebar for add/edit order */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                    <SheetContent className="max-w-lg w-full flex flex-col h-full p-2">
-                        {/* Sticky header */}
-                        <div className="sticky top-0 z-10 border-b p-2 mr-2 flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <span className="font-bold text-lg">Comanda #{editingOrder?.id ?? 'Nouă'}</span>
-                                <span className="text-sm text-muted-foreground">{form.date || new Date().toLocaleDateString()}</span>
-                                <Badge variant="outline" className="mr-2">{form.status}</Badge>
-                            </div>
-                        </div>
-                        {/* Tabbed main area */}
-                        <Tabs defaultValue="detalii" className="flex-1 flex flex-col overflow-y-auto">
-                            <TabsList className="sticky top z-10 border-b">
-                                <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
-                                <TabsTrigger value="articole">Articole comanda</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="detalii" className="p-2 overflow-y-auto flex flex-1 flex-col gap-4">
-                                {/* Card 1: Status comanda */}
-                                <Card className="p-4 flex flex-col gap-2">
-                                    <Label>Status comanda</Label>
-                                    <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selectează status..." />
+                    <SheetContent className="max-w-lg w-full h-full grid grid-rows-[auto,1fr,auto] p-0">
+                        <Tabs defaultValue="detalii" className="contents">
+                            {/* Header (row-1) */}
+                            <header className="border-b px-4 py-2 bg-background/90 backdrop-blur flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-lg">Comanda #{editingOrder?.id ?? 'Nouă'}</span>
+                                    <span className="text-sm text-muted-foreground">{form.date || new Date().toLocaleDateString()}</span>
+                                </div>
+                                <TabsList className="-mx-4 mt-2 border-t">
+                                    <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
+                                    <TabsTrigger value="articole">Articole comanda</TabsTrigger>
+                                </TabsList>
+                            </header>
+
+                            {/* Main scroll area (row-2) */}
+                            <main className="overflow-y-auto px-4 py-4 space-y-4">
+                                <TabsContent value="detalii" className="flex flex-col gap-4">
+                                    {/* Card 1: Status comanda */}
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <Label>Status comanda</Label>
+                                        <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selectează status..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {statuses.map(s => (
+                                                    <SelectItem key={s.name} value={s.name}>{s.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Label>Urgent</Label>
+                                            <Switch checked={form.urgent} onCheckedChange={v => setForm({ ...form, urgent: v })} />
+                                        </div>
+                                    </Card>
+                                    {/* Card 2: Client */}
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <Label>Client</Label>
+                                        <div className="flex gap-2 items-center">
+                                            <Select value={form.customer} onValueChange={v => setForm({ ...form, customer: v })}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selectează client..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {customers.map(c => (
+                                                        <SelectItem key={c.id} value={c.id}>{c.nume} {c.prenume} ({c.telefon})</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button size="sm" variant="outline" onClick={() => setAddCustomerOpen(v => !v)}>
+                                                {addCustomerOpen ? "Anulează" : "Adaugă client"}
+                                            </Button>
+                                        </div>
+                                        {addCustomerOpen && (
+                                            <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
+                                                <Input placeholder="Nume" value={newCustomer.nume} onChange={e => setNewCustomer({ ...newCustomer, nume: e.target.value })} />
+                                                <Input placeholder="Prenume" value={newCustomer.prenume} onChange={e => setNewCustomer({ ...newCustomer, prenume: e.target.value })} />
+                                                <Input placeholder="Email" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                                                <Input placeholder="Telefon" value={newCustomer.telefon} onChange={e => setNewCustomer({ ...newCustomer, telefon: e.target.value })} />
+                                                <Button size="sm" onClick={handleAddCustomer} disabled={addingCustomer}>{addingCustomer ? "Se adaugă..." : "Salvează clientul"}</Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                    {/* Card 3: Adrese */}
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <Label>Adresă ridicare</Label>
+                                        <div className="flex gap-2 items-center">
+                                            <Select value={form.adresa_colectare_id?.toString() || ''} onValueChange={v => setForm({ ...form, adresa_colectare_id: parseInt(v) })}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selectează adresă..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {addresses.map(a => (
+                                                        <SelectItem key={a.id} value={a.id.toString()}>{a.adresa}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'colectare' ? null : 'colectare' })}>
+                                                {addAddressOpen.type === 'colectare' ? 'Anulează' : 'Adaugă adresă'}
+                                            </Button>
+                                        </div>
+                                        {addAddressOpen.type === 'colectare' && (
+                                            <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
+                                                <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
+                                                <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
+                                                <Button size="sm" onClick={() => handleAddAddress('colectare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
+                                            </div>
+                                        )}
+                                        <Label>Adresă livrare</Label>
+                                        <div className="flex gap-2 items-center">
+                                            <Select value={form.adresa_returnare_id?.toString() || ''} onValueChange={v => setForm({ ...form, adresa_returnare_id: parseInt(v) })}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selectează adresă..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {addresses.map(a => (
+                                                        <SelectItem key={a.id} value={a.id.toString()}>{a.adresa}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'returnare' ? null : 'returnare' })}>
+                                                {addAddressOpen.type === 'returnare' ? 'Anulează' : 'Adaugă adresă'}
+                                            </Button>
+                                        </div>
+                                        {addAddressOpen.type === 'returnare' && (
+                                            <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
+                                                <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
+                                                <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
+                                                <Button size="sm" onClick={() => handleAddAddress('returnare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                </TabsContent>
+                                <TabsContent value="articole" className="flex flex-col gap-4">
+                                    <Card className="p-4 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-semibold">Articole în comandă</span>
+                                            <Button size="sm" variant="outline" onClick={handleAddItem}>Adaugă articol</Button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full text-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th className="px-2 py-1 text-left">Articol</th>
+                                                        <th className="px-2 py-1 text-left">Tip</th>
+                                                        <th className="px-2 py-1 text-left">Categorie</th>
+                                                        <th className="px-2 py-1 text-left">Cantitate</th>
+                                                        <th className="px-2 py-1 text-left">Preț/articol</th>
+                                                        <th className="px-2 py-1 text-left">Total</th>
+                                                        <th className="px-2 py-1"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {items.length === 0 ? (
+                                                        <tr><td colSpan={7} className="text-center py-4 text-muted-foreground">Niciun articol adăugat.</td></tr>
+                                                    ) : (
+                                                        items.map((item, idx) => {
+                                                            const service = services.find(s => s.id === item.service_id);
+                                                            return (
+                                                                <tr key={idx}>
+                                                                    <td className="px-2 py-1">
+                                                                        <Select value={item.service_id.toString()} onValueChange={v => handleItemChange(idx, 'service_id', parseInt(v))}>
+                                                                            <SelectTrigger className="w-32"><SelectValue placeholder="Articol" /></SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {services.map(s => (
+                                                                                    <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </td>
+                                                                    <td className="px-2 py-1">{service?.service_type?.name || '-'}</td>
+                                                                    <td className="px-2 py-1">{service?.category?.name || '-'}</td>
+                                                                    <td className="px-2 py-1"><Input type="number" min={1} className="w-16" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', parseInt(e.target.value))} /></td>
+                                                                    <td className="px-2 py-1"><Input type="number" min={0} className="w-20" value={item.price} onChange={e => handleItemChange(idx, 'price', parseFloat(e.target.value))} /></td>
+                                                                    <td className="px-2 py-1">{(item.quantity * item.price).toFixed(2)} RON</td>
+                                                                    <td className="px-2 py-1"><Button size="icon" variant="ghost" onClick={() => handleRemoveItem(idx)} aria-label="Șterge"><span aria-hidden>×</span></Button></td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Card>
+                                </TabsContent>
+                            </main>
+
+                            {/* Footer (row-3) */}
+                            <footer className="border-t px-4 py-4 bg-background/90 backdrop-blur flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold">Subtotal:</span>
+                                    <span>{/* Calculate and display order subtotal */}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Label>Metodă plată</Label>
+                                    <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                                        <SelectTrigger className="w-32">
+                                            <SelectValue placeholder="Metodă..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {statuses.map(s => (
-                                                <SelectItem key={s.name} value={s.name}>{s.label}</SelectItem>
-                                            ))}
+                                            <SelectItem value="cash">Cash</SelectItem>
+                                            <SelectItem value="card">Card</SelectItem>
+                                            <SelectItem value="OP">OP</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Label>Urgent</Label>
-                                        <Switch checked={form.urgent} onCheckedChange={v => setForm({ ...form, urgent: v })} />
-                                    </div>
-                                </Card>
-                                {/* Card 2: Client */}
-                                <Card className="p-4 flex flex-col gap-2">
-                                    <Label>Client</Label>
-                                    <div className="flex gap-2 items-center">
-                                        <Select value={form.customer} onValueChange={v => setForm({ ...form, customer: v })}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Selectează client..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {customers.map(c => (
-                                                    <SelectItem key={c.id} value={c.id}>{c.nume} {c.prenume} ({c.telefon})</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button size="sm" variant="outline" onClick={() => setAddCustomerOpen(v => !v)}>
-                                            {addCustomerOpen ? "Anulează" : "Adaugă client"}
-                                        </Button>
-                                    </div>
-                                    {addCustomerOpen && (
-                                        <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                            <Input placeholder="Nume" value={newCustomer.nume} onChange={e => setNewCustomer({ ...newCustomer, nume: e.target.value })} />
-                                            <Input placeholder="Prenume" value={newCustomer.prenume} onChange={e => setNewCustomer({ ...newCustomer, prenume: e.target.value })} />
-                                            <Input placeholder="Email" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
-                                            <Input placeholder="Telefon" value={newCustomer.telefon} onChange={e => setNewCustomer({ ...newCustomer, telefon: e.target.value })} />
-                                            <Button size="sm" onClick={handleAddCustomer} disabled={addingCustomer}>{addingCustomer ? "Se adaugă..." : "Salvează clientul"}</Button>
-                                        </div>
-                                    )}
-                                </Card>
-                                {/* Card 3: Adrese */}
-                                <Card className="p-4 flex flex-col gap-2">
-                                    <Label>Adresă ridicare</Label>
-                                    <div className="flex gap-2 items-center">
-                                        <Select value={form.adresa_colectare_id?.toString() || ''} onValueChange={v => setForm({ ...form, adresa_colectare_id: parseInt(v) })}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Selectează adresă..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {addresses.map(a => (
-                                                    <SelectItem key={a.id} value={a.id.toString()}>{a.adresa}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'colectare' ? null : 'colectare' })}>
-                                            {addAddressOpen.type === 'colectare' ? 'Anulează' : 'Adaugă adresă'}
-                                        </Button>
-                                    </div>
-                                    {addAddressOpen.type === 'colectare' && (
-                                        <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                            <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
-                                            <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
-                                            <Button size="sm" onClick={() => handleAddAddress('colectare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
-                                        </div>
-                                    )}
-                                    <Label>Adresă livrare</Label>
-                                    <div className="flex gap-2 items-center">
-                                        <Select value={form.adresa_returnare_id?.toString() || ''} onValueChange={v => setForm({ ...form, adresa_returnare_id: parseInt(v) })}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Selectează adresă..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {addresses.map(a => (
-                                                    <SelectItem key={a.id} value={a.id.toString()}>{a.adresa}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button size="sm" variant="outline" onClick={() => setAddAddressOpen({ type: addAddressOpen.type === 'returnare' ? null : 'returnare' })}>
-                                            {addAddressOpen.type === 'returnare' ? 'Anulează' : 'Adaugă adresă'}
-                                        </Button>
-                                    </div>
-                                    {addAddressOpen.type === 'returnare' && (
-                                        <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                            <Textarea placeholder="Adresă (autocomplete)" value={newAddress.adresa} onChange={e => setNewAddress({ ...newAddress, adresa: e.target.value })} />
-                                            <Textarea placeholder="Detalii adresă" value={newAddress.detalii} onChange={e => setNewAddress({ ...newAddress, detalii: e.target.value })} />
-                                            <Button size="sm" onClick={() => handleAddAddress('returnare')} disabled={addingAddress}>{addingAddress ? 'Se adaugă...' : 'Salvează adresa'}</Button>
-                                        </div>
-                                    )}
-                                </Card>
-                            </TabsContent>
-                            <TabsContent value="articole" className="p-4 overflow-y-auto flex flex-col gap-4">
-                                <Card className="p-4 flex flex-col gap-2">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-semibold">Articole în comandă</span>
-                                        <Button size="sm" variant="outline" onClick={handleAddItem}>Adaugă articol</Button>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full text-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th className="px-2 py-1 text-left">Articol</th>
-                                                    <th className="px-2 py-1 text-left">Tip</th>
-                                                    <th className="px-2 py-1 text-left">Categorie</th>
-                                                    <th className="px-2 py-1 text-left">Cantitate</th>
-                                                    <th className="px-2 py-1 text-left">Preț/articol</th>
-                                                    <th className="px-2 py-1 text-left">Total</th>
-                                                    <th className="px-2 py-1"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {items.length === 0 ? (
-                                                    <tr><td colSpan={7} className="text-center py-4 text-muted-foreground">Niciun articol adăugat.</td></tr>
-                                                ) : (
-                                                    items.map((item, idx) => {
-                                                        const service = services.find(s => s.id === item.service_id);
-                                                        return (
-                                                            <tr key={idx}>
-                                                                <td className="px-2 py-1">
-                                                                    <Select value={item.service_id.toString()} onValueChange={v => handleItemChange(idx, 'service_id', parseInt(v))}>
-                                                                        <SelectTrigger className="w-32"><SelectValue placeholder="Articol" /></SelectTrigger>
-                                                                        <SelectContent>
-                                                                            {services.map(s => (
-                                                                                <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </td>
-                                                                <td className="px-2 py-1">{service?.service_type?.name || '-'}</td>
-                                                                <td className="px-2 py-1">{service?.category?.name || '-'}</td>
-                                                                <td className="px-2 py-1"><Input type="number" min={1} className="w-16" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', parseInt(e.target.value))} /></td>
-                                                                <td className="px-2 py-1"><Input type="number" min={0} className="w-20" value={item.price} onChange={e => handleItemChange(idx, 'price', parseFloat(e.target.value))} /></td>
-                                                                <td className="px-2 py-1">{(item.quantity * item.price).toFixed(2)} RON</td>
-                                                                <td className="px-2 py-1"><Button size="icon" variant="ghost" onClick={() => handleRemoveItem(idx)} aria-label="Șterge"><span aria-hidden>×</span></Button></td>
-                                                            </tr>
-                                                        );
-                                                    })
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </Card>
-                            </TabsContent>
+                                    {/* Discount selector placeholder */}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold">Total:</span>
+                                    <span>{/* Calculate and display order total */}</span>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-2">
+                                    <Button variant="outline" onClick={() => setSidebarOpen(false)}>Anulează</Button>
+                                    <Button onClick={handleSaveOrder} disabled={saving}>{saving ? (editingOrder ? "Se salvează..." : "Se adaugă...") : (editingOrder ? "Salvează" : "Adaugă")}</Button>
+                                </div>
+                            </footer>
                         </Tabs>
-                        {/* Sticky footer */}
-                        <div className="sticky bottom-0 z-10 border-t p-4 flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold">Subtotal:</span>
-                                <span>{/* Calculate and display order subtotal */}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Label>Metodă plată</Label>
-                                <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                                    <SelectTrigger className="w-32">
-                                        <SelectValue placeholder="Metodă..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="card">Card</SelectItem>
-                                        <SelectItem value="OP">OP</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {/* Discount selector placeholder */}
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-bold">Total:</span>
-                                <span>{/* Calculate and display order total */}</span>
-                            </div>
-                            <div className="flex justify-end gap-2 mt-2">
-                                <Button variant="outline" onClick={() => setSidebarOpen(false)}>Anulează</Button>
-                                <Button onClick={handleSaveOrder} disabled={saving}>{saving ? (editingOrder ? "Se salvează..." : "Se adaugă...") : (editingOrder ? "Salvează" : "Adaugă")}</Button>
-                            </div>
-                        </div>
                     </SheetContent>
                 </Sheet>
             </div>
