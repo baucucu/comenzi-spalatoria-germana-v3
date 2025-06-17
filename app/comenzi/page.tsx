@@ -13,6 +13,10 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface OrderStatus {
     id: number;
@@ -95,6 +99,7 @@ export default function ComenziPage() {
     const [addingAddress, setAddingAddress] = useState(false);
     const [orderId, setOrderId] = useState<number | null>(null);
     const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
+    const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
 
     useEffect(() => {
         // Fetch statuses
@@ -501,18 +506,63 @@ export default function ComenziPage() {
                                     {/* Card 2: Client */}
                                     <Card className="p-4 flex flex-col gap-2">
                                         <Label>Client</Label>
-                                        <div className="flex gap-2 items-center">
-                                            <Select value={form.customer} onValueChange={v => setForm({ ...form, customer: v })}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Selectează client..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {customers.map(c => (
-                                                        <SelectItem key={c.id} value={c.id}>{c.nume} {c.prenume} ({c.telefon})</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        <Popover open={customerComboboxOpen} onOpenChange={setCustomerComboboxOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={customerComboboxOpen}
+                                                    className="w-full justify-between overflow-hidden"
+                                                >
+                                                    <span className="truncate">
+                                                        {form.customer ? (
+                                                            (() => {
+                                                                const sel = customers.find(c => c.id === form.customer);
+                                                                if (!sel) return "Selectează client...";
+                                                                return `${sel.nume} ${sel.prenume}${sel.telefon ? ` - ${sel.telefon}` : ""}${sel.email ? ` - ${sel.email}` : ""}`;
+                                                            })()
+                                                        ) : (
+                                                            "Selectează client..."
+                                                        )}
+                                                    </span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Caută client..."
+                                                        onValueChange={setCustomerSearch}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>Niciun client găsit.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {customers.map(c => {
+                                                                const display = `${c.nume} ${c.prenume}${c.telefon ? ` - ${c.telefon}` : ""}${c.email ? ` - ${c.email}` : ""}`;
+                                                                return (
+                                                                    <CommandItem
+                                                                        key={c.id}
+                                                                        value={display}
+                                                                        onSelect={() => {
+                                                                            setForm({ ...form, customer: c.id });
+                                                                            setCustomerComboboxOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <Check
+                                                                            className={cn(
+                                                                                "mr-2 h-4 w-4",
+                                                                                form.customer === c.id ? "opacity-100" : "opacity-0"
+                                                                            )}
+                                                                        />
+                                                                        {display}
+                                                                    </CommandItem>
+                                                                );
+                                                            })}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                         <Button size="sm" variant={addCustomerOpen ? "destructive" : "secondary"} onClick={() => setAddCustomerOpen(v => !v)}>
                                             {addCustomerOpen ? "Anulează" : "Adaugă client nou"}
                                         </Button>
