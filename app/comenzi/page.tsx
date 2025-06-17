@@ -512,10 +512,10 @@ export default function ComenziPage() {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            <Button size="sm" variant="outline" onClick={() => setAddCustomerOpen(v => !v)}>
-                                                {addCustomerOpen ? "Anulează" : "Adaugă client"}
-                                            </Button>
                                         </div>
+                                        <Button size="sm" variant="outline" onClick={() => setAddCustomerOpen(v => !v)}>
+                                            {addCustomerOpen ? "Anulează" : "Adaugă client nou"}
+                                        </Button>
                                         {addCustomerOpen && (
                                             <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                                                 <Input placeholder="Nume" value={newCustomer.nume} onChange={e => setNewCustomer({ ...newCustomer, nume: e.target.value })} />
