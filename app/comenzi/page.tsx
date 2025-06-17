@@ -513,7 +513,7 @@ export default function ComenziPage() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <Button size="sm" variant="outline" onClick={() => setAddCustomerOpen(v => !v)}>
+                                        <Button size="sm" variant={addCustomerOpen ? "destructive" : "secondary"} onClick={() => setAddCustomerOpen(v => !v)}>
                                             {addCustomerOpen ? "Anulează" : "Adaugă client nou"}
                                         </Button>
                                         {addCustomerOpen && (
