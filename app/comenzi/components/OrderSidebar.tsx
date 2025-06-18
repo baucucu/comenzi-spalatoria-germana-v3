@@ -35,10 +35,17 @@ import {
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComboboxDemo } from "../components/Combobox"
+import OrderStatusComponent from "./OrderSidebar/OrderStatus";
+import OrderCustomer from "./OrderSidebar/OrderCustomer";
+import OrderAddress from "./OrderSidebar/OrderAddress";
+import OrderPaymentMethod from "./OrderSidebar/OrderPaymentMethod";
+import OrderDiscount from "./OrderSidebar/OrderDiscount";
+import OrderItems from "./OrderSidebar/OrderItems";
+import OrderFooter from "./OrderSidebar/OrderFooter";
 
 import {
     Order,
-    OrderStatus,
+    OrderStatus as OrderStatusType,
     CustomerFull,
     Service,
     Address,
@@ -55,7 +62,7 @@ interface OrderSidebarProps {
 
 export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved }: OrderSidebarProps) {
     /* ---------- State ---------- */
-    const [statuses, setStatuses] = useState<OrderStatus[]>([]);
+    const [statuses, setStatuses] = useState<OrderStatusType[]>([]);
 
     const [customers, setCustomers] = useState<CustomerFull[]>([]);
     const [customerSearch, setCustomerSearch] = useState("");
@@ -445,335 +452,25 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     </SheetTitle>
                 </SheetHeader>
                 <Tabs defaultValue="detalii" className="contents">
-                    {/* Header */}
                     <TabsList className="mx-4 mt-2 border-t">
                         <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
                         <TabsTrigger value="articole">Articole comanda</TabsTrigger>
                     </TabsList>
-
-                    {/* Main area */}
                     <main className="overflow-y-auto px-4 space-y-4 flex-1">
                         <TabsContent value="detalii" className="flex flex-col gap-4">
-                            {/* Status */}
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Status comanda</Label>
-                                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Selectează status..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {statuses.map(s => (
-                                            <SelectItem key={s.name} value={s.name}>
-                                                {s.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Label>Urgent</Label>
-                                    <Switch
-                                        checked={form.urgent}
-                                        onCheckedChange={v => setForm({ ...form, urgent: v })}
-                                    />
-                                </div>
-                            </Card>
-
-                            {/* Client */}
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Client</Label>
-                                <Popover
-                                    open={customerComboboxOpen}
-                                    onOpenChange={setCustomerComboboxOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={customerComboboxOpen}
-                                            className="w-full justify-between overflow-hidden"
-                                        >
-                                            <span className="truncate">
-                                                {form.customer ? (
-                                                    (() => {
-                                                        const sel = customers.find(c => c.id === form.customer);
-                                                        if (!sel) return 'Selectează client...';
-                                                        return `${sel.nume} ${sel.prenume}${sel.telefon ? ` - ${sel.telefon}` : ''}${sel.email ? ` - ${sel.email}` : ''}`;
-                                                    })()
-                                                ) : (
-                                                    'Selectează client...'
-                                                )}
-                                            </span>
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Caută client..."
-                                                onValueChange={setCustomerSearch}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>Niciun client găsit.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {customers.map(c => {
-                                                        const display = `${c.nume} ${c.prenume}${c.telefon ? ` - ${c.telefon}` : ''}${c.email ? ` - ${c.email}` : ''}`;
-                                                        return (
-                                                            <CommandItem
-                                                                key={c.id}
-                                                                value={c.id}
-                                                                onSelect={() => {
-                                                                    setForm({ ...form, customer: c.id });
-                                                                    setCustomerComboboxOpen(false);
-                                                                }}
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        'mr-2 h-4 w-4',
-                                                                        form.customer === c.id ? 'opacity-100' : 'opacity-0'
-                                                                    )}
-                                                                />
-                                                                {display}
-                                                            </CommandItem>
-                                                        );
-                                                    })}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <Button
-                                    size="sm"
-                                    variant={addCustomerOpen ? 'destructive' : 'secondary'}
-                                    onClick={() => setAddCustomerOpen(v => !v)}
-                                >
-                                    {addCustomerOpen ? 'Anulează' : 'Adaugă client nou'}
-                                </Button>
-                                {addCustomerOpen && (
-                                    <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                        <Input
-                                            placeholder="Nume"
-                                            value={newCustomer.nume}
-                                            onChange={e => setNewCustomer({ ...newCustomer, nume: e.target.value })}
-                                        />
-                                        <Input
-                                            placeholder="Prenume"
-                                            value={newCustomer.prenume}
-                                            onChange={e =>
-                                                setNewCustomer({ ...newCustomer, prenume: e.target.value })
-                                            }
-                                        />
-                                        <Input
-                                            placeholder="Email"
-                                            value={newCustomer.email}
-                                            onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                                        />
-                                        <Input
-                                            placeholder="Telefon"
-                                            value={newCustomer.telefon}
-                                            onChange={e =>
-                                                setNewCustomer({ ...newCustomer, telefon: e.target.value })
-                                            }
-                                        />
-                                        <Button size="sm" onClick={handleAddCustomer} disabled={addingCustomer}>
-                                            {addingCustomer ? 'Se adaugă...' : 'Salvează clientul'}
-                                        </Button>
-                                    </div>
-                                )}
-                            </Card>
-
-                            {/* Adrese */}
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Adresă ridicare</Label>
-                                <div className="flex gap-2 items-center">
-                                    <Select
-                                        value={form.adresa_colectare_id?.toString() || ''}
-                                        onValueChange={v =>
-                                            setForm({ ...form, adresa_colectare_id: parseInt(v) })
-                                        }
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selectează adresă..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {addresses.map(a => (
-                                                <SelectItem key={a.id} value={a.id.toString()}>
-                                                    {a.adresa}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    variant={addAddressOpen.type === 'colectare' ? 'destructive' : 'secondary'}
-                                    onClick={() =>
-                                        setAddAddressOpen({
-                                            type:
-                                                addAddressOpen.type === 'colectare' ? null : 'colectare',
-                                        })
-                                    }
-                                >
-                                    {addAddressOpen.type === 'colectare' ? 'Anulează' : 'Adaugă adresă'}
-                                </Button>
-                                {addAddressOpen.type === 'colectare' && (
-                                    <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                        <Textarea
-                                            placeholder="Adresă (autocomplete)"
-                                            value={newAddress.adresa}
-                                            onChange={e =>
-                                                setNewAddress({ ...newAddress, adresa: e.target.value })
-                                            }
-                                        />
-                                        <Textarea
-                                            placeholder="Detalii adresă"
-                                            value={newAddress.detalii}
-                                            onChange={e =>
-                                                setNewAddress({ ...newAddress, detalii: e.target.value })
-                                            }
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="default"
-                                            onClick={() => handleAddAddress('colectare')}
-                                            disabled={addingAddress}
-                                        >
-                                            {addingAddress ? 'Se adaugă...' : 'Salvează adresa'}
-                                        </Button>
-                                    </div>
-                                )}
-                            </Card>
-
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Adresă livrare</Label>
-                                <div className="flex gap-2 items-center">
-                                    <Select
-                                        value={form.adresa_returnare_id?.toString() || ''}
-                                        onValueChange={v =>
-                                            setForm({ ...form, adresa_returnare_id: parseInt(v) })
-                                        }
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selectează adresă..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {addresses.map(a => (
-                                                <SelectItem key={a.id} value={a.id.toString()}>
-                                                    {a.adresa}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    variant={addAddressOpen.type === 'returnare' ? 'destructive' : 'secondary'}
-                                    onClick={() =>
-                                        setAddAddressOpen({
-                                            type:
-                                                addAddressOpen.type === 'returnare' ? null : 'returnare',
-                                        })
-                                    }
-                                >
-                                    {addAddressOpen.type === 'returnare' ? 'Anulează' : 'Adaugă adresă'}
-                                </Button>
-                                {addAddressOpen.type === 'returnare' && (
-                                    <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
-                                        <Textarea
-                                            placeholder="Adresă (autocomplete)"
-                                            value={newAddress.adresa}
-                                            onChange={e =>
-                                                setNewAddress({ ...newAddress, adresa: e.target.value })
-                                            }
-                                        />
-                                        <Textarea
-                                            placeholder="Detalii adresă"
-                                            value={newAddress.detalii}
-                                            onChange={e =>
-                                                setNewAddress({ ...newAddress, detalii: e.target.value })
-                                            }
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="default"
-                                            onClick={() => handleAddAddress('returnare')}
-                                            disabled={addingAddress}
-                                        >
-                                            {addingAddress ? 'Se adaugă...' : 'Salvează adresa'}
-                                        </Button>
-                                    </div>
-                                )}
-                            </Card>
-
-                            {/* Payment method */}
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Metodă plată</Label>
-                                <Select
-                                    value={form.payment_method}
-                                    onValueChange={v => setForm({ ...form, payment_method: v })}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Selectează metodă plată..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="card">Card</SelectItem>
-                                        <SelectItem value="OP">OP</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Card>
-
-                            {/* Discount */}
-                            <Card className="p-4 flex flex-col gap-2">
-                                <Label>Discount</Label>
-                                <Select
-                                    value={form.discount.toString()}
-                                    onValueChange={v => setForm({ ...form, discount: v })}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Selectează discount..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {discounts.map(d => (
-                                            <SelectItem key={d.id} value={d.value.toString()}>
-                                                {d.name} - {d.value} RON
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value="0">Fără discount</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Card>
+                            <OrderStatusComponent orderId={editingOrder?.id} />
+                            <OrderCustomer orderId={editingOrder?.id} />
+                            <OrderAddress orderId={editingOrder?.id} type="colectare" />
+                            <OrderAddress orderId={editingOrder?.id} type="returnare" />
+                            <OrderPaymentMethod orderId={editingOrder?.id} />
+                            <OrderDiscount orderId={editingOrder?.id} />
                         </TabsContent>
-
                         <TabsContent value="articole" className="flex flex-col gap-4">
-
+                            <OrderItems orderId={editingOrder?.id} />
                         </TabsContent>
                     </main>
-
                 </Tabs>
-                {/* Footer */}
-                <SheetFooter className="border-t px-4 py-4 bg-background/90 backdrop-blur flex justify-between">
-                    {(() => {
-                        const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-                        const discountVal = parseFloat(form.discount || '0') || 0;
-                        const total = subtotal - discountVal;
-                        return (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">Subtotal:</span>
-                                    <span>{subtotal.toFixed(2)} RON</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">Discount:</span>
-                                    <span>- {discountVal.toFixed(2)} RON</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="font-bold">Total:</span>
-                                    <span>{total.toFixed(2)} RON</span>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </SheetFooter>
+                <OrderFooter orderId={editingOrder?.id} />
             </SheetContent>
         </Sheet>
     );
