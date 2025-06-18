@@ -5,7 +5,8 @@ import {
     Sheet,
     SheetTitle,
     SheetContent,
-    SheetHeader
+    SheetHeader,
+    SheetFooter
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
@@ -431,15 +432,17 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
 
     /* ---------- JSX ---------- */
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
+        <Sheet open={open} onOpenChange={onOpenChange} >
             <SheetContent className="max-w-lg w-full h-full grid grid-rows-[auto,1fr,auto] p-0">
                 <SheetHeader>
-                    <SheetTitle className="flex flex-col gap-2"><span className="font-bold text-lg">
-                        Comanda #{editingOrder?.id ?? 'Nouă'}
-                    </span>
+                    <SheetTitle className="flex gap-2 items-center ml-4 mt-2">
+                        <span className="font-bold text-lg">
+                            Comanda #{editingOrder?.id ?? 'Nouă'}
+                        </span>
                         <span className="text-sm text-muted-foreground">
                             {form.date || new Date().toLocaleDateString()}
-                        </span></SheetTitle>
+                        </span>
+                    </SheetTitle>
                 </SheetHeader>
                 <Tabs defaultValue="detalii" className="contents">
                     {/* Header */}
@@ -503,7 +506,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] pointer-events-auto">
+                                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                                         <Command>
                                             <CommandInput
                                                 placeholder="Caută client..."
@@ -742,148 +745,35 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                         </TabsContent>
 
                         <TabsContent value="articole" className="flex flex-col gap-4">
-                            <Card className="p-4 flex flex-col gap-2">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="font-semibold">Articole în comandă</span>
-                                    <Button size="sm" variant="outline" onClick={handleAddItem}>
-                                        Adaugă articol
-                                    </Button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full text-sm">
-                                        <thead>
-                                            <tr>
-                                                <th className="px-2 py-1 text-left">Articol</th>
-                                                <th className="px-2 py-1 text-left">Tip</th>
-                                                <th className="px-2 py-1 text-left">Categorie</th>
-                                                <th className="px-2 py-1 text-left">Cantitate</th>
-                                                <th className="px-2 py-1 text-left">Preț/articol</th>
-                                                <th className="px-2 py-1 text-left">Total</th>
-                                                <th className="px-2 py-1"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {items.length === 0 ? (
-                                                <tr>
-                                                    <td
-                                                        colSpan={7}
-                                                        className="text-center py-4 text-muted-foreground"
-                                                    >
-                                                        Niciun articol adăugat.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                items.map((item, idx) => {
-                                                    const service = services.find(s => s.id === item.service_id);
-                                                    return (
-                                                        <tr key={idx}>
-                                                            <td className="px-2 py-1">
-                                                                <Select
-                                                                    value={item.service_id.toString()}
-                                                                    onValueChange={v =>
-                                                                        handleItemChange(idx, 'service_id', parseInt(v))
-                                                                    }
-                                                                >
-                                                                    <SelectTrigger className="w-32">
-                                                                        <SelectValue placeholder="Articol" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {services.map(s => (
-                                                                            <SelectItem
-                                                                                key={s.id}
-                                                                                value={s.id.toString()}
-                                                                            >
-                                                                                {s.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                {service?.service_type?.name || '-'}
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                {service?.category?.name || '-'}
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                <Input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    className="w-16"
-                                                                    value={item.quantity}
-                                                                    onChange={e =>
-                                                                        handleItemChange(
-                                                                            idx,
-                                                                            'quantity',
-                                                                            parseInt(e.target.value)
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                <Input
-                                                                    type="number"
-                                                                    min={0}
-                                                                    className="w-20"
-                                                                    value={item.price}
-                                                                    onChange={e =>
-                                                                        handleItemChange(
-                                                                            idx,
-                                                                            'price',
-                                                                            parseFloat(e.target.value)
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                {(item.quantity * item.price).toFixed(2)} RON
-                                                            </td>
-                                                            <td className="px-2 py-1">
-                                                                <Button
-                                                                    size="icon"
-                                                                    variant="ghost"
-                                                                    onClick={() => handleRemoveItem(idx)}
-                                                                    aria-label="Șterge"
-                                                                >
-                                                                    <span aria-hidden>×</span>
-                                                                </Button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </Card>
+
                         </TabsContent>
                     </main>
 
-                    {/* Footer */}
-                    <footer className="border-t px-4 py-4 bg-background/90 backdrop-blur flex flex-col gap-2">
-                        {(() => {
-                            const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-                            const discountVal = parseFloat(form.discount || '0') || 0;
-                            const total = subtotal - discountVal;
-                            return (
-                                <>
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold">Subtotal:</span>
-                                        <span>{subtotal.toFixed(2)} RON</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold">Discount:</span>
-                                        <span>- {discountVal.toFixed(2)} RON</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold">Total:</span>
-                                        <span>{total.toFixed(2)} RON</span>
-                                    </div>
-                                </>
-                            );
-                        })()}
-                    </footer>
                 </Tabs>
+                {/* Footer */}
+                <SheetFooter className="border-t px-4 py-4 bg-background/90 backdrop-blur flex justify-between">
+                    {(() => {
+                        const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+                        const discountVal = parseFloat(form.discount || '0') || 0;
+                        const total = subtotal - discountVal;
+                        return (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold">Subtotal:</span>
+                                    <span>{subtotal.toFixed(2)} RON</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold">Discount:</span>
+                                    <span>- {discountVal.toFixed(2)} RON</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold">Total:</span>
+                                    <span>{total.toFixed(2)} RON</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </SheetFooter>
             </SheetContent>
         </Sheet>
     );
