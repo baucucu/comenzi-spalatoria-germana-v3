@@ -9,6 +9,7 @@ import OrdersTable from "./components/OrdersTable";
 import OrderSidebar from "./components/OrderSidebar";
 import { Order } from "./types";
 
+
 export default function ComenziPage() {
     const [search, setSearch] = useState("");
     const [orders, setOrders] = useState<Order[]>([]);
@@ -94,8 +95,9 @@ export default function ComenziPage() {
                         className="max-w-xs"
                     />
                 </div>
-
-                <OrdersTable orders={orders} loading={loading} onSelectOrder={handleEditOrder} />
+                <div>
+                    <OrdersTable orders={orders} loading={loading} onSelectOrder={handleEditOrder} />
+                </div>
 
                 <OrderSidebar
                     open={sidebarOpen}

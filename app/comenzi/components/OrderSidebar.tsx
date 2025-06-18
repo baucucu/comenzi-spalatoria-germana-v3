@@ -3,7 +3,9 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import {
     Sheet,
-    SheetContent
+    SheetTitle,
+    SheetContent,
+    SheetHeader
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
@@ -31,6 +33,7 @@ import {
 } from "@/components/ui/command";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ComboboxDemo } from "../components/Combobox"
 
 import {
     Order,
@@ -430,22 +433,20 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className="max-w-lg w-full h-full grid grid-rows-[auto,1fr,auto] p-0">
+                <SheetHeader>
+                    <SheetTitle className="flex flex-col gap-2"><span className="font-bold text-lg">
+                        Comanda #{editingOrder?.id ?? 'Nouă'}
+                    </span>
+                        <span className="text-sm text-muted-foreground">
+                            {form.date || new Date().toLocaleDateString()}
+                        </span></SheetTitle>
+                </SheetHeader>
                 <Tabs defaultValue="detalii" className="contents">
                     {/* Header */}
-                    <header className="border-b px-4 py-2 bg-background/90 backdrop-blur flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-lg">
-                                Comanda #{editingOrder?.id ?? 'Nouă'}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                                {form.date || new Date().toLocaleDateString()}
-                            </span>
-                        </div>
-                        <TabsList className="-mx-4 mt-2 border-t">
-                            <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
-                            <TabsTrigger value="articole">Articole comanda</TabsTrigger>
-                        </TabsList>
-                    </header>
+                    <TabsList className="mx-4 mt-2 border-t">
+                        <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
+                        <TabsTrigger value="articole">Articole comanda</TabsTrigger>
+                    </TabsList>
 
                     {/* Main area */}
                     <main className="overflow-y-auto px-4 space-y-4 flex-1">
@@ -502,7 +503,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] pointer-events-auto">
                                         <Command>
                                             <CommandInput
                                                 placeholder="Caută client..."
@@ -516,7 +517,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                                                         return (
                                                             <CommandItem
                                                                 key={c.id}
-                                                                value={display}
+                                                                value={c.id}
                                                                 onSelect={() => {
                                                                     setForm({ ...form, customer: c.id });
                                                                     setCustomerComboboxOpen(false);
