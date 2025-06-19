@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import OrderItem from './OrderItem';
+import { Search } from 'lucide-react';
 
 interface Service {
     id: number;
@@ -40,6 +41,9 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
     const [services, setServices] = useState<Service[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [saving, setSaving] = useState(false);
+    const [view, setView] = useState<'comanda' | 'catalog'>('comanda');
+    const [search, setSearch] = useState('');
+    const [category, setCategory] = useState<'toate' | 'casa' | 'haine' | 'speciale' | 'comanda'>('toate');
 
     // Fetch services
     useEffect(() => {
@@ -114,6 +118,49 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
 
         fetchOrderItems();
     }, [orderId]);
+
+    // Switch to 'catalog' if items is empty
+    useEffect(() => {
+        if (items.length === 0) {
+            setView('catalog');
+        }
+    }, [items.length]);
+
+    // Helper to get unique categories from services
+    const categories = useMemo(() => {
+        const cats = new Set<string>();
+        services.forEach(s => {
+            if (s.category?.name) cats.add(s.category.name);
+        });
+        return Array.from(cats);
+    }, [services]);
+
+    const filteredServices = useMemo(() => {
+        let filtered = services;
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            filtered = filtered.filter(s =>
+                s.name.toLowerCase().includes(q) ||
+                (s.category?.name?.toLowerCase().includes(q)) ||
+                (s.service_type?.name?.toLowerCase().includes(q))
+            );
+        }
+        if (category === 'casa') {
+            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('casă'));
+        } else if (category === 'haine') {
+            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('haine'));
+        } else if (category === 'speciale') {
+            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('speciale'));
+        }
+        return filtered;
+    }, [services, search, category]);
+
+    const filteredItems = useMemo(() => {
+        if (category === 'comanda') {
+            return items.filter(item => item.quantity > 0);
+        }
+        return items;
+    }, [items, category]);
 
     const handleAddItem = () => {
         if (services.length === 0) return;
@@ -229,32 +276,87 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
 
     return (
         <div className="space-y-4 flex-1">
-            <div className="flex justify-between sticky top-0 bg-background z-10 items-center">
-                <Label>Articole comandă</Label>
-                <Button
-                    onClick={handleAddItem}
-                    variant="outline"
-                    size="sm"
-                    disabled={saving || services.length === 0}
-                >
-                    Adaugă articol
-                </Button>
+            <div className="flex flex-col gap-2 sticky top-0 bg-background z-10">
+                {/* Search bar */}
+                <div className="flex items-center gap-2 p-2">
+                    <Search className="w-5 h-5 text-muted-foreground" />
+                    <Input
+                        className="flex-1"
+                        placeholder="Caută articole, categorii sau servicii..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+                {/* Filter badges */}
+                <div className="flex gap-2 px-2 pb-2">
+                    <button
+                        className={`px-4 py-1 rounded-full text-sm ${category === 'toate' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
+                        onClick={() => setCategory('toate')}
+                        type="button"
+                    >
+                        Toate
+                    </button>
+                    <button
+                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'casa' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
+                        onClick={() => setCategory('casa')}
+                        type="button"
+                    >
+                        Articole de casă
+                    </button>
+                    <button
+                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'haine' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
+                        onClick={() => setCategory('haine')}
+                        type="button"
+                    >
+                        Haine
+                    </button>
+                    <button
+                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'speciale' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
+                        onClick={() => setCategory('speciale')}
+                        type="button"
+                    >
+                        Haine Speciale
+                    </button>
+                    <button
+                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'comanda' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
+                        onClick={() => setCategory('comanda')}
+                        type="button"
+                    >
+                        Comanda
+                    </button>
+                </div>
             </div>
 
             <div className="space-y-4">
-                {items.map((item, idx) => {
-                    const service = services.find(s => s.id === item.service_id);
-                    return (
-                        <OrderItem
-                            key={item.id ?? idx}
-                            item={item}
-                            service={service}
-                            saving={saving}
-                            onChange={(field, value) => handleItemChange(idx, field, value)}
-                            onRemove={() => handleRemoveItem(idx)}
-                        />
-                    );
-                })}
+                {category === 'comanda'
+                    ? items.filter(item => item.quantity > 0).map((item, idx) => {
+                        const service = services.find(s => s.id === item.service_id);
+                        return (
+                            <OrderItem
+                                key={item.id ?? idx}
+                                item={item}
+                                service={service}
+                                saving={saving}
+                                onChange={(field, value) => handleItemChange(idx, field, value)}
+                                onRemove={() => handleRemoveItem(idx)}
+                            />
+                        );
+                    })
+                    : filteredServices.map((service, idx) => {
+                        // Find if this service is already in items
+                        const itemIdx = items.findIndex(i => i.service_id === service.id);
+                        const item = items[itemIdx] || { service_id: service.id, quantity: 0, price: service.price, subtotal: 0 };
+                        return (
+                            <OrderItem
+                                key={service.id}
+                                item={item}
+                                service={service}
+                                saving={saving}
+                                onChange={(field, value) => handleItemChange(itemIdx >= 0 ? itemIdx : items.length, field, value)}
+                                onRemove={itemIdx >= 0 ? () => handleRemoveItem(itemIdx) : () => { }}
+                            />
+                        );
+                    })}
             </div>
         </div>
     );
