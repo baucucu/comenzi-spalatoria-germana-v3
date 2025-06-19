@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/command";
 import { ChevronsUpDown, Check, Paperclip, Shirt, Notebook } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ComboboxDemo } from "../components/Combobox"
 import OrderStatusComponent from "./OrderSidebar/OrderStatus";
 import OrderCustomer from "./OrderSidebar/OrderCustomer";
 import OrderAddress from "./OrderSidebar/OrderAddress";

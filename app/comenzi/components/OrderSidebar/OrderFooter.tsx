@@ -13,7 +13,6 @@ interface OrderFooterProps {
 }
 
 export default function OrderFooter({ orderId }: OrderFooterProps) {
-    const [notes, setNotes] = useState('');
     const [total, setTotal] = useState(0);
     const [subtotal, setSubtotal] = useState(0);
     const [discountPercent, setDiscountPercent] = useState(0);
@@ -38,7 +37,6 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
             }
 
             if (order) {
-                setNotes(order.notes || '');
                 setTotal(order.total_comanda_cu_discount || 0);
                 setDiscountPercent(order.discount || 0);
             }
@@ -69,24 +67,24 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
         fetchOrderDetails();
     }, [orderId]);
 
-    const handleNotesChange = async (value: string) => {
-        setNotes(value);
+    // const handleNotesChange = async (value: string) => {
+    //     setNotes(value);
 
-        if (!orderId) return;
+    //     if (!orderId) return;
 
-        setSaving(true);
-        const supabase = createClient();
-        const { error } = await supabase
-            .from('orders')
-            .update({ notes: value })
-            .eq('id', orderId);
+    //     setSaving(true);
+    //     const supabase = createClient();
+    //     const { error } = await supabase
+    //         .from('orders')
+    //         .update({ notes: value })
+    //         .eq('id', orderId);
 
-        setSaving(false);
+    //     setSaving(false);
 
-        if (error) {
-            toast.error('Eroare la salvarea notelor: ' + error.message);
-        }
-    };
+    //     if (error) {
+    //         toast.error('Eroare la salvarea notelor: ' + error.message);
+    //     }
+    // };
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">
