@@ -1,5 +1,6 @@
 'use client';
 import { Order } from "../types";
+import { OrderMainCell, OrderStatusCell, OrderClientCell } from "./OrderTableCells";
 
 interface OrdersTableProps {
     orders: Order[];
@@ -13,11 +14,9 @@ export default function OrdersTable({ orders, loading, onSelectOrder }: OrdersTa
             <table className="min-w-full text-sm">
                 <thead>
                     <tr className="bg-muted">
-                        <th className="px-2 py-2 text-left">#</th>
-                        <th className="px-2 py-2 text-left">Data</th>
+                        <th className="px-2 py-2 text-left"># / Data / Urgent</th>
                         <th className="px-2 py-2 text-left">Client</th>
                         <th className="px-2 py-2 text-left">Status</th>
-                        <th className="px-2 py-2 text-left">Urgent</th>
                         <th className="px-2 py-2 text-left">Ridicare</th>
                         <th className="px-2 py-2 text-left">Livrare</th>
                     </tr>
@@ -42,41 +41,23 @@ export default function OrdersTable({ orders, loading, onSelectOrder }: OrdersTa
                                 className="border-b cursor-pointer hover:bg-accent"
                                 onClick={() => onSelectOrder(order)}
                             >
-                                <td className="px-2 py-2 font-semibold">{order.id}</td>
-                                <td className="px-2 py-2">
-                                    {new Date(order.date_created).toLocaleDateString()}
+                                <td className="px-2 py-2 font-semibold">
+                                    <OrderMainCell order={order} />
                                 </td>
                                 <td className="px-2 py-2">
-                                    {order.customers ? (
-                                        <div className="flex flex-col">
-                                            <span>
-                                                {order.customers.nume} {order.customers.prenume}
-                                            </span>
-                                            {order.customers.telefon && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {order.customers.telefon}
-                                                </span>
-                                            )}
-                                            {order.customers.email && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {order.customers.email}
-                                                </span>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <span className="text-muted-foreground">-</span>
-                                    )}
+                                    <OrderClientCell order={order} />
                                 </td>
-                                <td className="px-2 py-2">{order.status}</td>
-                                <td className="px-2 py-2">{order.urgent ? "✔️" : ""}</td>
-                                <td className="px-2 py-2">
+                                <td className="px-2 py-2 min-w-[144px]">
+                                    <OrderStatusCell status={order.status || ""} />
+                                </td>
+                                <td className="px-2 py-2 text-xs">
                                     {order.adresa_colectare_id ? (
                                         order.adresa_colectare?.adresa || "-"
                                     ) : (
                                         <span className="text-xs text-muted-foreground">Magazin</span>
                                     )}
                                 </td>
-                                <td className="px-2 py-2">
+                                <td className="px-2 py-2 text-xs">
                                     {order.adresa_returnare_id ? (
                                         order.adresa_returnare?.adresa || "-"
                                     ) : (
