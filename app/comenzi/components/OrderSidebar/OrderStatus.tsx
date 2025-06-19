@@ -94,13 +94,13 @@ export default function OrderStatus({ orderId }: { orderId?: number | null }) {
                 </SelectContent>
             </Select>
             <div className="flex items-center gap-2 mt-2">
+                <Label htmlFor="urgent-switch">Urgent</Label>
                 <Switch
                     checked={!!order?.urgent}
                     onCheckedChange={urgent => updateOrder({ urgent })}
                     disabled={updating}
                     id="urgent-switch"
                 />
-                <Label htmlFor="urgent-switch">Urgent</Label>
             </div>
         </Card>
     );
