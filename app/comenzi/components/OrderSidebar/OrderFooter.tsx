@@ -63,15 +63,6 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">
-            <div>
-                <Label>Note comandă</Label>
-                <Textarea
-                    value={notes}
-                    onChange={(e) => handleNotesChange(e.target.value)}
-                    placeholder="Adaugă note pentru comandă..."
-                    disabled={saving}
-                />
-            </div>
 
             <div className="flex justify-between items-center">
                 <div className="text-lg font-semibold">

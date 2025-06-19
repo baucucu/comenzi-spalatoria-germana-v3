@@ -42,6 +42,7 @@ import OrderPaymentMethod from "./OrderSidebar/OrderPaymentMethod";
 import OrderDiscount from "./OrderSidebar/OrderDiscount";
 import OrderItems from "./OrderSidebar/OrderItems";
 import OrderFooter from "./OrderSidebar/OrderFooter";
+import OrderNotes from "./OrderSidebar/OrderNotes";
 
 import {
     Order,
@@ -58,6 +59,13 @@ interface OrderSidebarProps {
     onOpenChange: (open: boolean) => void;
     editingOrder: Order | null;
     onSaved: () => void;
+}
+
+// Notes type
+interface OrderNote {
+    id: number;
+    note: string;
+    created_at: string;
 }
 
 export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved }: OrderSidebarProps) {
@@ -455,22 +463,26 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     <TabsList className="mx-4 mt-2 border-t">
                         <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
                         <TabsTrigger value="articole">Articole comanda</TabsTrigger>
+                        <TabsTrigger value="notite">Notițe</TabsTrigger>
                     </TabsList>
                     <main className="overflow-y-auto px-4 space-y-4 flex-1">
                         <TabsContent value="detalii" className="flex flex-col gap-4">
-                            <OrderStatusComponent orderId={editingOrder?.id} />
-                            <OrderCustomer orderId={editingOrder?.id} />
-                            <OrderAddress orderId={editingOrder?.id} type="colectare" />
-                            <OrderAddress orderId={editingOrder?.id} type="returnare" />
-                            <OrderPaymentMethod orderId={editingOrder?.id} />
-                            <OrderDiscount orderId={editingOrder?.id} />
+                            <OrderStatusComponent orderId={editingOrder?.id ?? null} />
+                            <OrderCustomer orderId={editingOrder?.id ?? null} />
+                            <OrderAddress orderId={editingOrder?.id ?? null} type="colectare" />
+                            <OrderAddress orderId={editingOrder?.id ?? null} type="returnare" />
+                            <OrderPaymentMethod orderId={editingOrder?.id ?? null} />
+                            <OrderDiscount orderId={editingOrder?.id ?? null} />
                         </TabsContent>
                         <TabsContent value="articole" className="flex flex-col gap-4">
-                            <OrderItems orderId={editingOrder?.id} />
+                            <OrderItems orderId={editingOrder?.id ?? null} />
+                        </TabsContent>
+                        <TabsContent value="notite" className="flex flex-col gap-4">
+                            <OrderNotes orderId={editingOrder?.id ?? null} />
                         </TabsContent>
                     </main>
                 </Tabs>
-                <OrderFooter orderId={editingOrder?.id} />
+                <OrderFooter orderId={editingOrder?.id ?? null} />
             </SheetContent>
         </Sheet>
     );
