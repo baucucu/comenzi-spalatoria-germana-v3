@@ -43,9 +43,8 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
 
             if (data) {
                 setDiscounts(data);
-                const defaultDiscount = data.find(d => d.value === 0);
-                if (defaultDiscount) {
-                    setSelectedDiscount(defaultDiscount.value.toString());
+                if (data.length > 0) {
+                    setSelectedDiscount(data[0].id.toString());
                 }
             }
         };
@@ -70,14 +69,11 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
             }
 
             if (data) {
-                const discount = discounts.find(d => d.value === data.discount);
+                const discount = discounts.find(d => d.id === data.discount);
                 if (discount) {
-                    setSelectedDiscount(discount.value.toString());
-                } else {
-                    const defaultDiscount = discounts.find(d => d.value === 0);
-                    if (defaultDiscount) {
-                        setSelectedDiscount(defaultDiscount.value.toString());
-                    }
+                    setSelectedDiscount(discount.id.toString());
+                } else if (discounts.length > 0) {
+                    setSelectedDiscount(discounts[0].id.toString());
                 }
             }
         };
@@ -93,9 +89,10 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
 
         setSaving(true);
         const supabase = createClient();
+        const discountId = value ? parseInt(value) : null;
         const { error } = await supabase
             .from('orders')
-            .update({ discount: value ? parseFloat(value) : 0 })
+            .update({ discount: discountId })
             .eq('id', orderId);
 
         setSaving(false);
@@ -121,7 +118,7 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
                 </SelectTrigger>
                 <SelectContent>
                     {discounts.map((discount) => (
-                        <SelectItem key={discount.id} value={discount.value.toString()}>
+                        <SelectItem key={discount.id} value={discount.id.toString()}>
                             {discount.name} ({discount.value}%)
                         </SelectItem>
                     ))}

@@ -312,9 +312,9 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
 
     return (
         <div className="space-y-4 flex-1">
-            <div className="flex flex-col gap-2 sticky top-0 bg-background z-10">
+            <div className="flex flex-col gap-2 sticky top-0 shadow-sm bg-background z-10">
                 {/* Search bar */}
-                <div className="flex items-center gap-2 p-2">
+                <div className="flex items-center gap-2 pb-2">
                     <Search className="w-5 h-5 text-muted-foreground" />
                     <Input
                         className="flex-1"

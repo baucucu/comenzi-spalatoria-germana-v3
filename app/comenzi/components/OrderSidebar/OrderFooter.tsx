@@ -15,6 +15,9 @@ interface OrderFooterProps {
 export default function OrderFooter({ orderId }: OrderFooterProps) {
     const [notes, setNotes] = useState('');
     const [total, setTotal] = useState(0);
+    const [subtotal, setSubtotal] = useState(0);
+    const [discountPercent, setDiscountPercent] = useState(0);
+    const [discountValue, setDiscountValue] = useState(0);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -22,20 +25,44 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
 
         const fetchOrderDetails = async () => {
             const supabase = createClient();
-            const { data, error } = await supabase
+            // Fetch order details: notes, total, discount
+            const { data: order, error: orderError } = await supabase
                 .from('orders')
-                .select('notes, total_comanda_cu_discount')
+                .select('notes, total_comanda_cu_discount, discount')
                 .eq('id', orderId)
                 .single();
 
-            if (error) {
-                toast.error('Eroare la încărcarea detaliilor comenzii: ' + error.message);
+            if (orderError) {
+                toast.error('Eroare la încărcarea detaliilor comenzii: ' + orderError.message);
                 return;
             }
 
-            if (data) {
-                setNotes(data.notes || '');
-                setTotal(data.total_comanda_cu_discount || 0);
+            if (order) {
+                setNotes(order.notes || '');
+                setTotal(order.total_comanda_cu_discount || 0);
+                setDiscountPercent(order.discount || 0);
+            }
+
+            // Fetch order items for subtotal
+            const { data: items, error: itemsError } = await supabase
+                .from('order_services')
+                .select('quantity: cantitate, price: service(price)')
+                .eq('order_id', orderId);
+
+            if (itemsError) {
+                toast.error('Eroare la încărcarea articolelor comenzii: ' + itemsError.message);
+                return;
+            }
+
+            if (items) {
+                // items: [{ quantity, price: { price } }]
+                const subtotalValue = items.reduce((sum: number, item: any) => {
+                    const price = item.price?.price || 0;
+                    return sum + price * (item.quantity || 0);
+                }, 0);
+                setSubtotal(subtotalValue);
+                // Calculate discount value in lei
+                setDiscountValue(subtotalValue * (order?.discount || 0) / 100);
             }
         };
 
@@ -63,10 +90,20 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">
-
-            <div className="flex justify-between items-center">
-                <div className="text-lg font-semibold">
-                    Total: {total.toFixed(2)} RON
+            <div className="flex flex-col gap-1 w-full">
+                <div className="flex justify-between items-center text-base">
+                    <span>Subtotal:</span>
+                    <span>{subtotal.toFixed(2)} RON</span>
+                </div>
+                {discountPercent > 0 && (
+                    <div className="flex justify-between items-center text-base text-green-700">
+                        <span>Discount:</span>
+                        <span>-{discountPercent}% ({discountValue.toFixed(2)} RON)</span>
+                    </div>
+                )}
+                <div className="flex justify-between items-center text-lg font-semibold mt-1">
+                    <span>Total:</span>
+                    <span>{total.toFixed(2)} RON</span>
                 </div>
             </div>
         </SheetFooter>
