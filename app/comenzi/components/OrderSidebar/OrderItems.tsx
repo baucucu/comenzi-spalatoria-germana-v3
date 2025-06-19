@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import OrderItem from './OrderItem';
 
 interface Service {
     id: number;
@@ -55,11 +56,26 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             }
 
             if (data) {
-                setServices(data.map(s => ({
-                    ...s,
-                    category: Array.isArray(s.category) && s.category.length > 0 ? s.category[0] : null,
-                    service_type: Array.isArray(s.service_type) && s.service_type.length > 0 ? s.service_type[0] : null,
-                })));
+                const mapped: Service[] = (data as any[]).map(s => {
+                    let category = null;
+                    if (Array.isArray(s.category)) {
+                        category = s.category.length > 0 && typeof s.category[0]?.name === 'string' ? { name: s.category[0].name } : null;
+                    } else if (typeof s.category?.name === 'string') {
+                        category = { name: s.category.name };
+                    }
+                    let service_type = null;
+                    if (Array.isArray(s.service_type)) {
+                        service_type = s.service_type.length > 0 && typeof s.service_type[0]?.name === 'string' ? { name: s.service_type[0].name } : null;
+                    } else if (typeof s.service_type?.name === 'string') {
+                        service_type = { name: s.service_type.name };
+                    }
+                    return {
+                        ...s,
+                        category,
+                        service_type,
+                    } as Service;
+                });
+                setServices(mapped);
             }
         };
 
@@ -101,12 +117,14 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
 
     const handleAddItem = () => {
         if (services.length === 0) return;
+        const firstService = services[0] as Service;
+        if (!firstService || typeof firstService.price !== 'number') return;
 
         const newItem: OrderItem = {
-            service_id: services[0].id,
+            service_id: firstService.id,
             quantity: 1,
-            price: services[0].price,
-            subtotal: services[0].price,
+            price: firstService.price,
+            subtotal: firstService.price,
         };
 
         setItems(prev => [...prev, newItem]);
@@ -224,73 +242,19 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             </div>
 
             <div className="space-y-4">
-                {items.map((item, idx) => (
-                    <Card key={idx} className="p-4 space-y-4">
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <Label>Serviciu</Label>
-                                <Select
-                                    value={item.service_id.toString()}
-                                    onValueChange={(value) => handleItemChange(idx, 'service_id', parseInt(value))}
-                                    disabled={saving}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {services.map((service) => (
-                                            <SelectItem key={service.id} value={service.id.toString()}>
-                                                {service.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="w-24">
-                                <Label>Cantitate</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value) || 0)}
-                                    disabled={saving}
-                                />
-                            </div>
-
-                            <div className="w-24">
-                                <Label>Preț</Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={item.price}
-                                    onChange={(e) => handleItemChange(idx, 'price', parseFloat(e.target.value) || 0)}
-                                    disabled={saving}
-                                />
-                            </div>
-
-                            <div className="w-24">
-                                <Label>Subtotal</Label>
-                                <Input
-                                    type="number"
-                                    value={item.subtotal}
-                                    disabled
-                                />
-                            </div>
-
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="mt-auto"
-                                onClick={() => handleRemoveItem(idx)}
-                                disabled={saving}
-                            >
-                                ×
-                            </Button>
-                        </div>
-                    </Card>
-                ))}
+                {items.map((item, idx) => {
+                    const service = services.find(s => s.id === item.service_id);
+                    return (
+                        <OrderItem
+                            key={item.id ?? idx}
+                            item={item}
+                            service={service}
+                            saving={saving}
+                            onChange={(field, value) => handleItemChange(idx, field, value)}
+                            onRemove={() => handleRemoveItem(idx)}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
