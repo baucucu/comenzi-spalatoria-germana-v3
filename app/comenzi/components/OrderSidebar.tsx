@@ -32,7 +32,7 @@ import {
     CommandItem,
     CommandList
 } from "@/components/ui/command";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check, Paperclip, Shirt, Notebook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ComboboxDemo } from "../components/Combobox"
 import OrderStatusComponent from "./OrderSidebar/OrderStatus";
@@ -460,10 +460,19 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     </SheetTitle>
                 </SheetHeader>
                 <Tabs defaultValue="detalii" className="contents">
-                    <TabsList className="mx-4 mt-2 border-t">
-                        <TabsTrigger value="detalii">Detalii comanda</TabsTrigger>
-                        <TabsTrigger value="articole">Articole comanda</TabsTrigger>
-                        <TabsTrigger value="notite">Notițe</TabsTrigger>
+                    <TabsList className="mx-4 mt-2 border-t w-full space-around">
+                        <TabsTrigger value="detalii">
+                            <Paperclip className="w-4 h-4" />
+                            Comanda
+                        </TabsTrigger>
+                        <TabsTrigger value="articole">
+                            <Shirt className="w-4 h-4" />
+                            Articole
+                        </TabsTrigger>
+                        <TabsTrigger value="notite">
+                            <Notebook className="w-4 h-4" />
+                            Notițe
+                        </TabsTrigger>
                     </TabsList>
                     <main className="overflow-y-auto px-4 space-y-4 flex-1">
                         <TabsContent value="detalii" className="flex flex-col gap-4">

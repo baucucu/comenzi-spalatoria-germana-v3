@@ -228,8 +228,8 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
+        <div className="space-y-4 flex-1">
+            <div className="flex justify-between sticky top-0 bg-background z-10 items-center">
                 <Label>Articole comandă</Label>
                 <Button
                     onClick={handleAddItem}
