@@ -460,16 +460,16 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     </SheetTitle>
                 </SheetHeader>
                 <Tabs defaultValue="detalii" className="contents">
-                    <TabsList className="mx-4 mt-2 border-t w-full space-around">
-                        <TabsTrigger value="detalii">
+                    <TabsList className="mt-2 border-t w-full px-2 flex justify-center">
+                        <TabsTrigger value="detalii" className="flex-1 flex items-center justify-center gap-2">
                             <Paperclip className="w-4 h-4" />
                             Comanda
                         </TabsTrigger>
-                        <TabsTrigger value="articole">
+                        <TabsTrigger value="articole" className="flex-1 flex items-center justify-center gap-2">
                             <Shirt className="w-4 h-4" />
                             Articole
                         </TabsTrigger>
-                        <TabsTrigger value="notite">
+                        <TabsTrigger value="notite" className="flex-1 flex items-center justify-center gap-2">
                             <Notebook className="w-4 h-4" />
                             Notițe
                         </TabsTrigger>
