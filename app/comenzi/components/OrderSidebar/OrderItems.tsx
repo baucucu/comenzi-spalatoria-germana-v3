@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import OrderItem from './OrderItem';
 import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Service {
     id: number;
@@ -43,7 +44,8 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
     const [saving, setSaving] = useState(false);
     const [view, setView] = useState<'comanda' | 'catalog'>('comanda');
     const [search, setSearch] = useState('');
-    const [category, setCategory] = useState<'toate' | 'casa' | 'haine' | 'speciale' | 'comanda'>('toate');
+    const [category, setCategory] = useState<string>('toate');
+    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
     // Fetch services
     useEffect(() => {
@@ -119,6 +121,19 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
         fetchOrderItems();
     }, [orderId]);
 
+    // Fetch categories from DB
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .from('categories')
+                .select('id, name')
+                .order('name');
+            if (!error && data) setCategories(data);
+        };
+        fetchCategories();
+    }, []);
+
     // Switch to 'catalog' if items is empty
     useEffect(() => {
         if (items.length === 0) {
@@ -127,13 +142,23 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
     }, [items.length]);
 
     // Helper to get unique categories from services
-    const categories = useMemo(() => {
+    const categoriesFromServices = useMemo(() => {
         const cats = new Set<string>();
         services.forEach(s => {
             if (s.category?.name) cats.add(s.category.name);
         });
         return Array.from(cats);
     }, [services]);
+
+    const filterOptions = [
+        { key: 'comanda', label: 'Comanda' },
+        { key: 'toate', label: 'Toate' },
+        ...categories.map(c => ({ key: c.id.toString(), label: c.name })),
+    ];
+
+    const isCategorySelected = (key: string) => category === key;
+
+    const handleCategorySelect = (key: string) => setCategory(key);
 
     const filteredServices = useMemo(() => {
         let filtered = services;
@@ -145,15 +170,14 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                 (s.service_type?.name?.toLowerCase().includes(q))
             );
         }
-        if (category === 'casa') {
-            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('casă'));
-        } else if (category === 'haine') {
-            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('haine'));
-        } else if (category === 'speciale') {
-            filtered = filtered.filter(s => s.category?.name?.toLowerCase().includes('speciale'));
+        if (category !== 'toate' && category !== 'comanda') {
+            const selectedCat = categories.find(c => c.id.toString() === category)?.name;
+            if (selectedCat) {
+                filtered = filtered.filter(s => s.category?.name === selectedCat);
+            }
         }
         return filtered;
-    }, [services, search, category]);
+    }, [services, search, category, categories]);
 
     const filteredItems = useMemo(() => {
         if (category === 'comanda') {
@@ -181,27 +205,38 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
         }
     };
 
-    const handleItemChange = async (idx: number, field: string, value: any) => {
-        const updatedItems = items.map((item, i) => {
-            if (i !== idx) return item;
+    const handleItemChange = async (serviceId: number, field: string, value: any, serviceObj?: Service) => {
+        let updatedItems = [...items];
+        let itemToUpdate: OrderItem;
+        const idx = items.findIndex(i => i.service_id === serviceId);
+        const service = serviceObj || services.find(s => s.id === serviceId);
+        if (!service) return;
 
-            const updatedItem = {
-                ...item,
+        if (idx !== -1) {
+            // Update existing item
+            itemToUpdate = {
+                ...items[idx],
                 [field]: value,
             };
-
-            // Recalculate subtotal if quantity or price changed
             if (field === 'quantity' || field === 'price') {
-                updatedItem.subtotal = updatedItem.quantity * updatedItem.price;
+                itemToUpdate.subtotal = itemToUpdate.quantity * itemToUpdate.price;
             }
-
-            return updatedItem;
-        });
+            updatedItems[idx] = itemToUpdate;
+        } else {
+            // Insert new item
+            itemToUpdate = {
+                service_id: service.id,
+                quantity: field === 'quantity' ? value : 1,
+                price: service.price,
+                subtotal: (field === 'quantity' ? value : 1) * service.price,
+            };
+            updatedItems = [...items, itemToUpdate];
+        }
 
         setItems(updatedItems);
 
         if (orderId) {
-            await saveItem(updatedItems[idx]);
+            await saveItem(itemToUpdate);
         }
     };
 
@@ -288,42 +323,18 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                     />
                 </div>
                 {/* Filter badges */}
-                <div className="flex gap-2 px-2 pb-2">
-                    <button
-                        className={`px-4 py-1 rounded-full text-sm ${category === 'toate' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
-                        onClick={() => setCategory('toate')}
-                        type="button"
-                    >
-                        Toate
-                    </button>
-                    <button
-                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'casa' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
-                        onClick={() => setCategory('casa')}
-                        type="button"
-                    >
-                        Articole de casă
-                    </button>
-                    <button
-                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'haine' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
-                        onClick={() => setCategory('haine')}
-                        type="button"
-                    >
-                        Haine
-                    </button>
-                    <button
-                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'speciale' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
-                        onClick={() => setCategory('speciale')}
-                        type="button"
-                    >
-                        Haine Speciale
-                    </button>
-                    <button
-                        className={`px-4 py-1 rounded-full font-semibold text-sm ${category === 'comanda' ? 'bg-black text-white' : 'bg-muted text-foreground'}`}
-                        onClick={() => setCategory('comanda')}
-                        type="button"
-                    >
-                        Comanda
-                    </button>
+                <div className="flex gap-2 px-2 pb-2 flex-wrap">
+                    {filterOptions.map(opt => (
+                        <Badge
+                            key={opt.key}
+                            variant={isCategorySelected(opt.key) ? 'default' : 'secondary'}
+                            className="cursor-pointer select-none"
+                            onClick={() => handleCategorySelect(opt.key)}
+                            style={{ userSelect: 'none' }}
+                        >
+                            {opt.label}
+                        </Badge>
+                    ))}
                 </div>
             </div>
 
@@ -337,7 +348,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                 item={item}
                                 service={service}
                                 saving={saving}
-                                onChange={(field, value) => handleItemChange(idx, field, value)}
+                                onChange={(field, value) => handleItemChange(item.service_id, field, value, service)}
                                 onRemove={() => handleRemoveItem(idx)}
                             />
                         );
@@ -352,7 +363,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                 item={item}
                                 service={service}
                                 saving={saving}
-                                onChange={(field, value) => handleItemChange(itemIdx >= 0 ? itemIdx : items.length, field, value)}
+                                onChange={(field, value) => handleItemChange(service.id, field, value, service)}
                                 onRemove={itemIdx >= 0 ? () => handleRemoveItem(itemIdx) : () => { }}
                             />
                         );
