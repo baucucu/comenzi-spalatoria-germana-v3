@@ -41,6 +41,7 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
             <Popover
                 open={customerComboboxOpen}
                 onOpenChange={setCustomerComboboxOpen}
+                modal={true}
             >
                 <PopoverTrigger asChild>
                     <Button
@@ -79,6 +80,7 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
                                             key={c.id}
                                             value={c.id}
                                             onSelect={() => {
+                                                console.log(c.id);
                                                 handleCustomerChange(c.id);
                                                 setCustomerComboboxOpen(false);
                                             }}
