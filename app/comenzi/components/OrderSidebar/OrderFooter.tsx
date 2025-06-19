@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SheetFooter } from '@/components/ui/sheet';
+import { fetchOrderTotals } from '../../../../utils/supabase/fetchOrderTotals';
 
 interface OrderFooterProps {
     orderId: number | null;
@@ -22,69 +23,32 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
     useEffect(() => {
         if (!orderId) return;
 
-        const fetchOrderDetails = async () => {
-            const supabase = createClient();
-            // Fetch order details: notes, total, discount
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .select('notes, total_comanda_cu_discount, discount')
-                .eq('id', orderId)
-                .single();
-
-            if (orderError) {
-                toast.error('Eroare la încărcarea detaliilor comenzii: ' + orderError.message);
-                return;
-            }
-
-            if (order) {
-                setTotal(order.total_comanda_cu_discount || 0);
-                setDiscountPercent(order.discount || 0);
-            }
-
-            // Fetch order items for subtotal
-            const { data: items, error: itemsError } = await supabase
-                .from('order_services')
-                .select('quantity: cantitate, price: service(price)')
-                .eq('order_id', orderId);
-
-            if (itemsError) {
-                toast.error('Eroare la încărcarea articolelor comenzii: ' + itemsError.message);
-                return;
-            }
-
-            if (items) {
-                // items: [{ quantity, price: { price } }]
-                const subtotalValue = items.reduce((sum: number, item: any) => {
-                    const price = item.price?.price || 0;
-                    return sum + price * (item.quantity || 0);
-                }, 0);
-                setSubtotal(subtotalValue);
-                // Calculate discount value in lei
-                setDiscountValue(subtotalValue * (order?.discount || 0) / 100);
+        const fetchTotals = async () => {
+            try {
+                const data = await fetchOrderTotals(orderId);
+                console.log('Order totals RPC data:', data);
+                if (data) {
+                    setSubtotal(data.total_before_discount || 0);
+                    setDiscountPercent(data.discount_percentage || 0);
+                    setDiscountValue(data.discount_value || 0);
+                    setTotal(data.total_after_discount || 0);
+                } else {
+                    setSubtotal(0);
+                    setDiscountPercent(0);
+                    setDiscountValue(0);
+                    setTotal(0);
+                }
+            } catch (error: any) {
+                toast.error('Eroare la încărcarea totalurilor comenzii: ' + (error?.message || error));
+                setSubtotal(0);
+                setDiscountPercent(0);
+                setDiscountValue(0);
+                setTotal(0);
             }
         };
 
-        fetchOrderDetails();
+        fetchTotals();
     }, [orderId]);
-
-    // const handleNotesChange = async (value: string) => {
-    //     setNotes(value);
-
-    //     if (!orderId) return;
-
-    //     setSaving(true);
-    //     const supabase = createClient();
-    //     const { error } = await supabase
-    //         .from('orders')
-    //         .update({ notes: value })
-    //         .eq('id', orderId);
-
-    //     setSaving(false);
-
-    //     if (error) {
-    //         toast.error('Eroare la salvarea notelor: ' + error.message);
-    //     }
-    // };
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">
