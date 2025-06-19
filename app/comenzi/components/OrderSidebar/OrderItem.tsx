@@ -1,8 +1,12 @@
-import { Card } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Shirt } from 'lucide-react';
 import React from 'react';
 
 interface Service {
@@ -29,17 +33,27 @@ interface OrderItemProps {
 
 export default function OrderItem({ item, service, saving, onChange, onRemove }: OrderItemProps) {
     return (
-        <Card className="p-4 space-y-2">
-            <div className="flex items-center gap-4">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-base">{service?.name || 'Serviciu'}</span>
+        <Card className="w-full p-2 sm:p-3 flex flex-col justify-between min-h-0">
+            <div className="flex items-center gap-3 w-full">
+                <Shirt className="text-xl text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <CardTitle className="text-base font-semibold truncate leading-tight p-0 m-0" title={service?.name}>
+                        {service?.name || 'Serviciu'}
+                    </CardTitle>
+                    <div className="flex gap-1 items-center flex-wrap text-xs">
                         {service?.service_type?.name && (
-                            <Badge variant="secondary">{service.service_type.name}</Badge>
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5 font-normal rounded-md">
+                                {service.service_type.name}
+                            </Badge>
                         )}
                         {service?.category?.name && (
-                            <Badge variant="outline">{service.category.name}</Badge>
+                            <Badge variant="outline" className="text-xs px-2 py-0.5 font-normal rounded-md">
+                                {service.category.name}
+                            </Badge>
                         )}
+                        <span className="text-xs text-muted-foreground font-medium ml-1">
+                            {item.price} RON / buc
+                        </span>
                     </div>
                 </div>
                 <Button
@@ -48,62 +62,39 @@ export default function OrderItem({ item, service, saving, onChange, onRemove }:
                     onClick={onRemove}
                     disabled={saving}
                     aria-label="Șterge articol"
+                    className="ml-2 w-9 h-9"
                 >
                     ×
                 </Button>
             </div>
-            <div className="flex gap-4 items-end">
-                <div className="w-32">
-                    <Label>Cantitate</Label>
-                    <div className="flex items-center gap-1">
-                        <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            onClick={() => onChange('quantity', Math.max(1, item.quantity - 1))}
-                            disabled={saving || item.quantity <= 1}
-                        >
-                            -
-                        </Button>
-                        <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={e => onChange('quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            disabled={saving}
-                            className="w-14 text-center"
-                        />
-                        <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            onClick={() => onChange('quantity', item.quantity + 1)}
-                            disabled={saving}
-                        >
-                            +
-                        </Button>
-                    </div>
-                </div>
-                <div className="w-24">
-                    <Label>Preț</Label>
-                    <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.price}
-                        onChange={e => onChange('price', parseFloat(e.target.value) || 0)}
-                        disabled={saving}
-                    />
-                </div>
-                <div className="w-24">
-                    <Label>Total</Label>
-                    <Input
-                        type="number"
-                        value={item.subtotal}
-                        disabled
-                    />
-                </div>
-            </div>
+            <CardContent className="p-0 pt-2 flex items-center gap-2 w-full min-h-0">
+                <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={() => onChange('quantity', Math.max(1, item.quantity - 1))}
+                    disabled={saving || item.quantity <= 1}
+                    className="rounded-md w-8 h-8 text-base border"
+                >
+                    –
+                </Button>
+                <span className="font-medium text-base w-7 text-center select-none">
+                    {item.quantity}
+                </span>
+                <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={() => onChange('quantity', item.quantity + 1)}
+                    disabled={saving}
+                    className="rounded-md w-8 h-8 text-base border"
+                >
+                    +
+                </Button>
+                <span className="ml-auto font-bold text-base whitespace-nowrap">
+                    {item.subtotal} RON
+                </span>
+            </CardContent>
         </Card>
     );
 } 
