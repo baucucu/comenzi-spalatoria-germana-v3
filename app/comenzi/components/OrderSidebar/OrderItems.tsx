@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import OrderItem from './OrderItem';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { matchesSearch } from '@/app/servicii/utils';
 
 interface Service {
     id: number;
@@ -163,11 +164,11 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
     const filteredServices = useMemo(() => {
         let filtered = services;
         if (search.trim()) {
-            const q = search.trim().toLowerCase();
+            const q = search.trim();
             filtered = filtered.filter(s =>
-                s.name.toLowerCase().includes(q) ||
-                (s.category?.name?.toLowerCase().includes(q)) ||
-                (s.service_type?.name?.toLowerCase().includes(q))
+                matchesSearch(s.name, q) ||
+                (s.category?.name && matchesSearch(s.category.name, q)) ||
+                (s.service_type?.name && matchesSearch(s.service_type.name, q))
             );
         }
         if (category !== 'toate' && category !== 'comanda') {
