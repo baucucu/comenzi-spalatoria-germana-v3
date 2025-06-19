@@ -11,6 +11,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 
 interface OrderPaymentMethodProps {
     orderId: number | null;
@@ -68,7 +69,7 @@ export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps)
     };
 
     return (
-        <div className="space-y-2">
+        <Card className="p-4 flex flex-col gap-2">
             <Label>Metodă de plată</Label>
             <Select
                 value={paymentMethod}
@@ -84,6 +85,7 @@ export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps)
                     <SelectItem value="transfer">Transfer bancar</SelectItem>
                 </SelectContent>
             </Select>
-        </div>
+            {saving && <div className="text-xs text-muted-foreground">Se salvează...</div>}
+        </Card>
     );
 } 

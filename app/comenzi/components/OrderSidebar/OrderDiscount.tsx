@@ -11,6 +11,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 
 interface Discount {
     id: number;
@@ -24,7 +25,7 @@ interface OrderDiscountProps {
 
 export default function OrderDiscount({ orderId }: OrderDiscountProps) {
     const [discounts, setDiscounts] = useState<Discount[]>([]);
-    const [selectedDiscount, setSelectedDiscount] = useState<string>("0");
+    const [selectedDiscount, setSelectedDiscount] = useState<string>("");
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -42,6 +43,10 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
 
             if (data) {
                 setDiscounts(data);
+                const defaultDiscount = data.find(d => d.value === 0);
+                if (defaultDiscount) {
+                    setSelectedDiscount(defaultDiscount.value.toString());
+                }
             }
         };
 
@@ -49,7 +54,7 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
     }, []);
 
     useEffect(() => {
-        if (!orderId) return;
+        if (!orderId || discounts.length === 0) return;
 
         const fetchOrderDiscount = async () => {
             const supabase = createClient();
@@ -66,7 +71,14 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
 
             if (data) {
                 const discount = discounts.find(d => d.value === data.discount);
-                setSelectedDiscount(discount ? discount.value.toString() : "0");
+                if (discount) {
+                    setSelectedDiscount(discount.value.toString());
+                } else {
+                    const defaultDiscount = discounts.find(d => d.value === 0);
+                    if (defaultDiscount) {
+                        setSelectedDiscount(defaultDiscount.value.toString());
+                    }
+                }
             }
         };
 
@@ -97,7 +109,7 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
     };
 
     return (
-        <div className="space-y-2">
+        <Card className="p-4 flex flex-col gap-2">
             <Label>Discount</Label>
             <Select
                 value={selectedDiscount}
@@ -108,7 +120,6 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
                     <SelectValue placeholder="Selectează discount" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="0">Fără discount</SelectItem>
                     {discounts.map((discount) => (
                         <SelectItem key={discount.id} value={discount.value.toString()}>
                             {discount.name} ({discount.value}%)
@@ -116,6 +127,7 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
                     ))}
                 </SelectContent>
             </Select>
-        </div>
+            {saving && <div className="text-xs text-muted-foreground">Se salvează...</div>}
+        </Card>
     );
 } 
