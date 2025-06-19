@@ -1,6 +1,6 @@
 'use client';
 import { Order } from "../types";
-import { OrderMainCell, OrderStatusCell, OrderClientCell } from "./OrderTableCells";
+import { OrderMainCell, OrderStatusCell, OrderClientCell, OrderUrgentCell } from "./OrderTableCells";
 
 interface OrdersTableProps {
     orders: Order[];
@@ -16,6 +16,7 @@ export default function OrdersTable({ orders, loading, onSelectOrder }: OrdersTa
                     <tr className="bg-muted">
                         <th className="px-2 py-2 text-left">Comanda</th>
                         <th className="px-2 py-2 text-left">Status</th>
+                        <th className="px-2 py-2 text-left">Urgent</th>
                         <th className="px-2 py-2 text-left">Client</th>
                         <th className="px-2 py-2 text-left">Ridicare</th>
                         <th className="px-2 py-2 text-left">Livrare</th>
@@ -44,10 +45,15 @@ export default function OrdersTable({ orders, loading, onSelectOrder }: OrdersTa
                                 <td className="px-2 py-2 font-semibold">
                                     <OrderMainCell order={order} />
                                 </td>
-                                <td className="px-2 py-2 min-w-[144px]">
+                                <td className="px-2 py-2 min-w-[120px]">
                                     <OrderStatusCell status={order.status || ""} />
                                 </td>
-                                <td className="px-2 py-2">
+                                <td className="px-2 py-2 min-w-[100px]">
+                                    {order.urgent && (
+                                        <OrderUrgentCell urgent={order.urgent} />
+                                    )}
+                                </td>
+                                <td className="px-2 py-2 min-w-[200px]">
                                     <OrderClientCell order={order} />
                                 </td>
                                 <td className="px-2 py-2 text-xs">

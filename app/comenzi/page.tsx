@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useSearchParams } from "next/navigation";
+import { Calendar } from "@/components/ui/calendar";
+import { addDays, isAfter, isBefore, isSameDay } from "date-fns";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { type DateRange } from "react-day-picker";
 
 import OrdersTable from "./components/OrdersTable";
 import OrderSidebar from "./components/OrderSidebar";
@@ -17,6 +22,12 @@ export default function ComenziPage() {
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+
+    const searchParams = useSearchParams();
+    const statusFilter = searchParams.get("status") || "";
+
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
+    const [calendarOpen, setCalendarOpen] = useState(false);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -46,6 +57,22 @@ export default function ComenziPage() {
             `);
         }
 
+        if (statusFilter) {
+            query = query.eq("status", statusFilter);
+        }
+
+        if (dateRange?.from && dateRange?.to) {
+            const fromStr = dateRange.from.toISOString().slice(0, 10);
+            const toStr = dateRange.to.toISOString().slice(0, 10);
+            query = query.gte("date_created", fromStr).lte("date_created", toStr);
+        } else if (dateRange?.from) {
+            const fromStr = dateRange.from.toISOString().slice(0, 10);
+            query = query.gte("date_created", fromStr);
+        } else if (dateRange?.to) {
+            const toStr = dateRange.to.toISOString().slice(0, 10);
+            query = query.lte("date_created", toStr);
+        }
+
         const { data } = await query;
         setOrders(
             (data || []).map((order: any) => ({
@@ -61,7 +88,7 @@ export default function ComenziPage() {
     useEffect(() => {
         fetchOrders();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
+    }, [search, statusFilter, dateRange]);
 
     const handleAddOrder = () => {
         setEditingOrder(null);
@@ -77,6 +104,20 @@ export default function ComenziPage() {
         setSidebarOpen(false);
         fetchOrders();
     };
+
+    // Helper for label
+    const getDateLabel = () => {
+        if (dateRange?.from && dateRange?.to) {
+            return `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`;
+        } else if (dateRange?.from) {
+            return `De la ${dateRange.from.toLocaleDateString()}`;
+        } else if (dateRange?.to) {
+            return `Până la ${dateRange.to.toLocaleDateString()}`;
+        }
+        return "Filtru: toate datele";
+    };
+
+    const clearDateFilter = () => setDateRange(undefined);
 
     return (
         <PageContentWrapper>
@@ -94,6 +135,43 @@ export default function ComenziPage() {
                         onChange={e => setSearch(e.target.value)}
                         className="max-w-xs"
                     />
+                    <div className="flex items-center gap-2">
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={dateRange?.from || dateRange?.to ? "outline" : "secondary"}
+                                    className="min-w-[180px] justify-start text-left"
+                                >
+                                    <span className={dateRange?.from || dateRange?.to ? "" : "text-muted-foreground"}>
+                                        {getDateLabel()}
+                                    </span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-auto p-0">
+                                <Calendar
+                                    mode="range"
+                                    selected={dateRange}
+                                    onSelect={range => {
+                                        setDateRange(range);
+                                        if (range?.from && range?.to) setCalendarOpen(false);
+                                    }}
+                                    numberOfMonths={2}
+                                    className="rounded-md border shadow-sm"
+                                    captionLayout="dropdown"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={clearDateFilter}
+                            title="Șterge filtrul de dată"
+                            className="ml-1"
+                            disabled={!dateRange?.from && !dateRange?.to}
+                        >
+                            ✕
+                        </Button>
+                    </div>
                 </div>
                 <div>
                     <OrdersTable orders={orders} loading={loading} onSelectOrder={handleEditOrder} />
