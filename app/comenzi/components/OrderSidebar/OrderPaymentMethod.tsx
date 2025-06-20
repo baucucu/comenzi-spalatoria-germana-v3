@@ -18,11 +18,14 @@ interface OrderPaymentMethodProps {
 }
 
 export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps) {
-    const [paymentMethod, setPaymentMethod] = useState<string>('');
+    const [paymentMethod, setPaymentMethod] = useState<string>('Neachitat');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (!orderId) return;
+        if (!orderId) {
+            setPaymentMethod('Neachitat');
+            return;
+        }
 
         const fetchPaymentMethod = async () => {
             const supabase = createClient();
@@ -34,12 +37,9 @@ export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps)
 
             if (error) {
                 toast.error('Eroare la încărcarea metodei de plată: ' + error.message);
-                return;
             }
 
-            if (data) {
-                setPaymentMethod(data.payment_method || '');
-            }
+            setPaymentMethod(data?.payment_method || 'Neachitat');
         };
 
         fetchPaymentMethod();
@@ -80,9 +80,10 @@ export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps)
                     <SelectValue placeholder="Selectează metoda de plată" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="transfer">Transfer bancar</SelectItem>
+                    <SelectItem value="Neachitat">Neachitat</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Transfer bancar">Ordin de Plată</SelectItem>
                 </SelectContent>
             </Select>
             {saving && <div className="text-xs text-muted-foreground">Se salvează...</div>}
