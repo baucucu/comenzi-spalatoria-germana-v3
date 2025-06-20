@@ -447,9 +447,9 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     /* ---------- JSX ---------- */
     return (
         <Sheet open={open} onOpenChange={onOpenChange} >
-            <SheetContent className="max-w-lg w-full h-full flex flex-col p-0 gap-2">
-                <SheetHeader>
-                    <SheetTitle className="flex gap-2 items-center ml-4 mt-2">
+            <SheetContent className="max-w-lg w-full h-full flex flex-col p-0 gap-0">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle className="flex gap-2 items-center">
                         <span className="font-bold text-lg">
                             Comanda #{editingOrder?.id ?? 'Nouă'}
                         </span>
@@ -473,7 +473,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                             Notițe
                         </TabsTrigger>
                     </TabsList>
-                    <main className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/25">
                         <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
                             <OrderStatusComponent orderId={editingOrder?.id ?? null} />
                             <OrderCustomer orderId={editingOrder?.id ?? null} />
