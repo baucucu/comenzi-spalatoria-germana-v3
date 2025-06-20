@@ -11,7 +11,7 @@ export interface Discount {
 }
 
 export async function getDiscounts(): Promise<Discount[]> {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase.from("discounts").select("*").order("created_at", { ascending: false })
 
