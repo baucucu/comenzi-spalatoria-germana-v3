@@ -458,8 +458,8 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                         </span>
                     </SheetTitle>
                 </SheetHeader>
-                <Tabs defaultValue="detalii" className="contents">
-                    <TabsList className="border-t w-full px-2 flex justify-center taburile-mele">
+                <Tabs defaultValue="detalii" className="flex flex-1 flex-col overflow-hidden">
+                    <TabsList className="w-full justify-around rounded-none border-b bg-transparent p-0">
                         <TabsTrigger value="detalii" className="flex-1 flex items-center justify-center gap-2">
                             <Paperclip className="w-4 h-4" />
                             Comanda
@@ -473,8 +473,8 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                             Notițe
                         </TabsTrigger>
                     </TabsList>
-                    <main className="overflow-y-auto px-4 space-y-4 flex-1 mainul-meu">
-                        <TabsContent value="detalii" className="flex flex-col gap-4">
+                    <main className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
                             <OrderStatusComponent orderId={editingOrder?.id ?? null} />
                             <OrderCustomer orderId={editingOrder?.id ?? null} />
                             <OrderAddress orderId={editingOrder?.id ?? null} type="colectare" />
@@ -482,10 +482,10 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                             <OrderPaymentMethod orderId={editingOrder?.id ?? null} />
                             <OrderDiscount orderId={editingOrder?.id ?? null} />
                         </TabsContent>
-                        <TabsContent value="articole" className="flex flex-col gap-4">
+                        <TabsContent value="articole" className="m-0 flex flex-col gap-4">
                             <OrderItems orderId={editingOrder?.id ?? null} />
                         </TabsContent>
-                        <TabsContent value="notite" className="flex flex-col gap-4">
+                        <TabsContent value="notite" className="m-0 flex flex-col gap-4">
                             <OrderNotes orderId={editingOrder?.id ?? null} />
                         </TabsContent>
                     </main>
