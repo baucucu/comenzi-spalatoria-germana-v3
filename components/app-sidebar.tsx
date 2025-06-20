@@ -189,7 +189,7 @@ function ComenziMenuItem({ route, status, label, badge, color, handleMenuItemCli
             if (error) {
                 console.error('Error getting count:', error);
             } else {
-                setOrdersCount(count)
+                setOrdersCount(count || 0)
             }
         }
         countItems()
