@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { createClient } from "@/utils/supabase/server";
 import { Toaster } from "sonner";
+import React from "react";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -43,7 +44,7 @@ export default async function RootLayout({
           <SidebarProvider style={{
             "--sidebar-width": "20rem",
             "--sidebar-width-mobile": "20rem",
-          }}>
+          } as React.CSSProperties}>
             {user && <AppSidebar />}
             <main className="min-h-screen w-full relative">
               <div className="absolute top-4 left-4 z-50">
