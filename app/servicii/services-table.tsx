@@ -96,7 +96,7 @@ export function ServicesTable({ services, categories, serviceTypes }: ServicesTa
 
     // Get unique categories from services for filter badges
     const usedCategories = useMemo(() => {
-        const categoryIds = [...new Set(services.map((s) => s.category_id))]
+        const categoryIds = Array.from(new Set(services.map((s) => s.category_id)))
         return categories.filter((cat) => categoryIds.includes(cat.id))
     }, [services, categories])
 
