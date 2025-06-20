@@ -109,13 +109,16 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             }
 
             if (data) {
-                setItems(data.map(item => ({
-                    id: item.id,
-                    service_id: item.service_id,
-                    quantity: item.cantitate,
-                    price: item.service?.price || 0,
-                    subtotal: item.total_articol,
-                })));
+                setItems(data.map(item => {
+                    const serviceData = Array.isArray(item.service) ? item.service[0] : item.service;
+                    return {
+                        id: item.id,
+                        service_id: item.service_id,
+                        quantity: item.cantitate,
+                        price: serviceData?.price || 0,
+                        subtotal: item.total_articol,
+                    };
+                }));
             }
         };
 
