@@ -51,10 +51,15 @@ export default function ComenziPage() {
             .order("date_created", { ascending: false });
 
         if (search.trim()) {
-            query = query.or(`
-                search_vector@@plainto_tsquery.romanian.${search},
-                id.eq.${parseInt(search).toString() || ''}
-            `);
+            const searchTerm = search.trim();
+            const orConditions = [`search_vector.plfts(romanian).${searchTerm}`];
+
+            const searchAsNumber = parseInt(searchTerm, 10);
+            if (!isNaN(searchAsNumber) && searchTerm === searchAsNumber.toString()) {
+                orConditions.push(`id.eq.${searchAsNumber}`);
+            }
+
+            query = query.or(orConditions.join(","));
         }
 
         if (statusFilter) {
