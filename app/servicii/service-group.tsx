@@ -67,7 +67,25 @@ export function ServiceGroup({ categoryGroup, categories, serviceTypes }: Servic
                         <div className="space-y-4">
                             {categoryGroup.services.map((service) => (
                                 <div key={service.name} className="border rounded-lg p-4 bg-muted/20">
-                                    <h4 className="font-semibold text-lg mb-3">{service.name}</h4>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-lg">{service.name}</h4>
+                                        <ServiceForm
+                                            categories={categories}
+                                            serviceTypes={serviceTypes}
+                                            article={{
+                                                name: service.name,
+                                                categoryId: categoryGroup.categoryId,
+                                                categoryName: categoryGroup.categoryName,
+                                                services: service.serviceTypes.map((st) => ({
+                                                    id: st.id,
+                                                    price: st.price,
+                                                    service_type_id: st.service_type_id,
+                                                })),
+                                            }}
+                                            mode="edit"
+                                        />
+                                    </div>
+
                                     <div className="space-y-2">
                                         {service.serviceTypes.map((serviceType) => (
                                             <div
@@ -79,22 +97,6 @@ export function ServiceGroup({ categoryGroup, categories, serviceTypes }: Servic
                                                     <span className="font-medium">{serviceType.price.toFixed(2)} RON</span>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <ServiceForm
-                                                        categories={categories}
-                                                        serviceTypes={serviceTypes}
-                                                        service={{
-                                                            id: serviceType.id,
-                                                            name: service.name,
-                                                            price: serviceType.price,
-                                                            category_id: serviceType.category_id,
-                                                            service_type_id: serviceType.service_type_id,
-                                                            categories: { name: categoryGroup.categoryName },
-                                                            service_types: { name: serviceType.type },
-                                                            created_at: "",
-                                                            updated_at: "",
-                                                        }}
-                                                        mode="edit"
-                                                    />
                                                     <DeleteServiceDialog
                                                         serviceId={serviceType.id}
                                                         serviceName={`${service.name} - ${serviceType.type}`}

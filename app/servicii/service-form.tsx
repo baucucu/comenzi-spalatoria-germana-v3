@@ -30,12 +30,8 @@ interface ServiceType {
 
 interface Service {
     id: number
-    name: string
     price: number
-    category_id: number
     service_type_id: number
-    categories: { name: string }
-    service_types: { name: string }
 }
 
 interface GroupedItem {
