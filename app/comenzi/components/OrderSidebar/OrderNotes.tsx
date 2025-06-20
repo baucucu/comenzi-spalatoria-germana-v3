@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Bold, Italic, Underline, List, Image, Tag, Archive, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PlusCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 interface OrderNotesProps {
     orderId: number | null;
@@ -21,8 +24,8 @@ export default function OrderNotes({ orderId }: OrderNotesProps) {
     const [title, setTitle] = useState('');
     const [note, setNote] = useState('');
     const [loadingNotes, setLoadingNotes] = useState(false);
-    const [addingNote, setAddingNote] = useState(false);
-    const noteRef = useRef<HTMLDivElement>(null);
+    const [savingNote, setSavingNote] = useState(false);
+    const [showAddNoteForm, setShowAddNoteForm] = useState(false);
 
     useEffect(() => {
         if (!orderId) {
@@ -47,9 +50,9 @@ export default function OrderNotes({ orderId }: OrderNotesProps) {
         fetchNotes();
     }, [orderId]);
 
-    const handleAddNote = async () => {
-        if (!orderId || !note.trim() || !title.trim()) return;
-        setAddingNote(true);
+    const handleSaveNote = async () => {
+        if (!orderId || !note.trim()) return;
+        setSavingNote(true);
         const newNoteObj: OrderNote = {
             title,
             note,
@@ -61,97 +64,91 @@ export default function OrderNotes({ orderId }: OrderNotesProps) {
             .from('orders')
             .update({ notes: updatedNotes })
             .eq('id', orderId);
-        setAddingNote(false);
+        setSavingNote(false);
         if (error) {
-            toast.error('Eroare la adăugarea notiței: ' + error.message);
+            toast.error('Eroare la salvarea notiței: ' + error.message);
             return;
         }
         setNotes(updatedNotes);
         setTitle('');
         setNote('');
-        toast.success('Notiță adăugată!');
+        setShowAddNoteForm(false);
+        toast.success('Notiță salvată!');
     };
 
-    // Formatting handlers
-    const format = (command: string) => {
-        document.execCommand(command, false);
-        if (noteRef.current) {
-            setNote(noteRef.current.innerHTML);
-        }
+    const handleCancel = () => {
+        setTitle('');
+        setNote('');
+        setShowAddNoteForm(false);
     };
 
     return (
         <div className="flex flex-col h-full max-h-full">
-            {/* Notes list */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-                {loadingNotes ? (
-                    <div className="text-muted-foreground text-sm">Se încarcă notițele...</div>
-                ) : notes.length === 0 ? (
-                    <div className="text-muted-foreground text-sm">Nu există notițe pentru această comandă.</div>
-                ) : (
-                    notes.map((note, idx) => (
-                        <div key={idx} className="border rounded p-3 bg-muted/50">
-                            <div className="font-semibold mb-1">{note.title}</div>
-                            <div className="text-xs text-muted-foreground mb-1">
-                                {new Date(note.created_at).toLocaleString('ro-RO')}
-                            </div>
-                            <div className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: note.note }} />
-                        </div>
-                    ))
+            <div className="sticky top-0 bg-background z-10 py-2 border-b mb-2">
+                {!showAddNoteForm && (
+                    <Button size="sm" onClick={() => setShowAddNoteForm(true)} className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Adaugă notă
+                    </Button>
                 )}
             </div>
-            {/* Sticky new note input */}
-            <div className="sticky bottom-0 left-0 right-0 bg-background border-t pt-4 pb-2 mt-2 z-10">
-                <div className="mb-2">
-                    <input
-                        className="w-full border-b outline-none text-base font-medium mb-2 px-1 py-1"
-                        placeholder="Title"
-                        value={title}
-                        onChange={e => setTitle(e.target.value)}
-                        disabled={addingNote}
-                    />
-                </div>
-                <div className="rounded border bg-white">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-2 px-2 py-1 border-b">
-                        <button type="button" className="p-1" title="Bold Ctrl+B" onClick={() => format('bold')}><Bold size={16} /></button>
-                        <button type="button" className="p-1" title="Italic Ctrl+I" onClick={() => format('italic')}><Italic size={16} /></button>
-                        <button type="button" className="p-1" title="Underline Ctrl+U" onClick={() => format('underline')}><Underline size={16} /></button>
-                        <button type="button" className="p-1" title="List" onClick={() => format('insertUnorderedList')}><List size={16} /></button>
-                        <span className="flex-1" />
-                        <button type="button" className="p-1" title="Image"><Image size={16} /></button>
-                        <button type="button" className="p-1" title="Tag"><Tag size={16} /></button>
-                        <button type="button" className="p-1" title="Archive"><Archive size={16} /></button>
-                        <button type="button" className="p-1" title="Delete"><Trash2 size={16} /></button>
-                    </div>
-                    {/* Contenteditable note input */}
-                    <div className="relative">
-                        <div
-                            ref={noteRef}
-                            className="w-full px-3 py-2 min-h-[60px] outline-none resize-none"
-                            contentEditable
-                            suppressContentEditableWarning
-                            onInput={e => setNote((e.target as HTMLDivElement).innerHTML)}
-                            onBlur={e => setNote((e.target as HTMLDivElement).innerHTML)}
-                            dangerouslySetInnerHTML={{ __html: note }}
-                            style={{ whiteSpace: 'pre-wrap' }}
+
+            {showAddNoteForm && (
+                <div className="mb-4 p-4 border rounded-lg bg-muted/20">
+                    <div className="mb-2">
+                        <Label htmlFor="note-title">Titlu (opțional)</Label>
+                        <Input
+                            id="note-title"
+                            placeholder="Titlul notiței"
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                            disabled={savingNote}
+                            className="mt-1"
                         />
-                        {(!note || note === '<br>') && (
-                            <span className="absolute left-3 top-2 text-muted-foreground pointer-events-none select-none">
-                                Enter note description...
-                            </span>
-                        )}
+                    </div>
+                    <div className="mb-4">
+                        <Label htmlFor="note-body">Notiță</Label>
+                        <Textarea
+                            id="note-body"
+                            placeholder="Introduceți descrierea notiței..."
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            disabled={savingNote}
+                            className="mt-1 min-h-[80px] resize-none"
+                            required
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCancel} disabled={savingNote}>
+                            Anulează
+                        </Button>
+                        <Button size="sm" onClick={handleSaveNote} disabled={savingNote || !note.trim()}>
+                            {savingNote ? 'Se salvează...' : 'Salvează nota'}
+                        </Button>
                     </div>
                 </div>
-                <div className="flex justify-between items-center mt-2">
-                    <div className="flex gap-2 text-muted-foreground">
-                        {/* Placeholder for future icons/actions */}
-                    </div>
-                    <Button size="sm" onClick={handleAddNote} disabled={addingNote || !note.trim() || !title.trim()}>
-                        {addingNote ? 'Se adaugă...' : 'Add Note'}
-                    </Button>
+            )}
+
+            {/* Notes list */}
+            {!showAddNoteForm && (
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+                    {loadingNotes ? (
+                        <div className="text-muted-foreground text-sm">Se încarcă notițele...</div>
+                    ) : notes.length === 0 ? (
+                        <div className="text-muted-foreground text-sm">Nu există notițe pentru această comandă.</div>
+                    ) : (
+                        [...notes].reverse().map((note, idx) => (
+                            <div key={idx} className="border rounded p-3 bg-muted/50">
+                                {note.title && <div className="font-semibold mb-1">{note.title}</div>}
+                                <div className="text-xs text-muted-foreground mb-1">
+                                    {new Date(note.created_at).toLocaleString('ro-RO')}
+                                </div>
+                                <div className="whitespace-pre-line">{note.note}</div>
+                            </div>
+                        ))
+                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 }
