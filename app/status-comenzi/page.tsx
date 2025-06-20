@@ -8,6 +8,6 @@ export default async function StatusComenzi() {
         console.error(error)
     }
     return (
-        <OrderStatusManager statusComenzi={statusComenzi} />
+        <OrderStatusManager statusComenzi={statusComenzi || []} />
     )
 }
