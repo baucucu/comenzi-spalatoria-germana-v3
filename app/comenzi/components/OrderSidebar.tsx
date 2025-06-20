@@ -447,7 +447,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     /* ---------- JSX ---------- */
     return (
         <Sheet open={open} onOpenChange={onOpenChange} >
-            <SheetContent className="max-w-lg w-full h-full flex flex-col p-0">
+            <SheetContent className="max-w-lg w-full h-full flex flex-col p-0 gap-2">
                 <SheetHeader>
                     <SheetTitle className="flex gap-2 items-center ml-4 mt-2">
                         <span className="font-bold text-lg">
