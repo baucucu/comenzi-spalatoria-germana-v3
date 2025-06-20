@@ -38,20 +38,45 @@ export function useCustomer(orderId?: number | null) {
 
     // Fetch customers when search changes
     useEffect(() => {
+        let isCancelled = false;
+
         const fetchCustomers = async () => {
             const supabase = createClient();
             let query = supabase
                 .from("customers")
                 .select("id, nume, prenume, email, telefon")
                 .order("nume");
-            if (customerSearch) {
-                const q = `%${customerSearch.toLowerCase()}%`;
-                query = query.or(`nume.ilike.${q},prenume.ilike.${q},email.ilike.${q},telefon.ilike.${q}`);
+
+            if (customerSearch.trim()) {
+                const cleanedSearch = customerSearch.trim().replace(/[&|!():*]/g, "");
+                const tsQuery = cleanedSearch
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map(term => `${term}:*`)
+                    .join(" & ");
+
+                if (tsQuery) {
+                    query = query.textSearch("fts", tsQuery, {
+                        config: "romanian",
+                        type: "tsquery",
+                    } as any);
+                }
             }
+
             const { data } = await query;
-            if (data) setCustomers(data);
+            if (!isCancelled) {
+                setCustomers(data || []);
+            }
         };
-        fetchCustomers();
+
+        const timeoutId = setTimeout(() => {
+            fetchCustomers();
+        }, 300); // Debounce search
+
+        return () => {
+            clearTimeout(timeoutId);
+            isCancelled = true;
+        };
     }, [customerSearch]);
 
     // Add new customer
