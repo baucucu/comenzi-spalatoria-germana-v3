@@ -101,14 +101,14 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         urgent: false,
         payment_method: '',
         discount: '',
-        notes: '',
         marcute: '',
         data_comanda: '',
-        data_colectare: '',
-        data_returnare: ''
+        data_colectare: null as string | null,
+        data_returnare: null as string | null,
     });
 
     const [saving, setSaving] = useState(false);
+    const justCreatedOrder = useRef(false);
 
     /* ---------- Effects ---------- */
     // Fetch statuses once
@@ -139,11 +139,10 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 urgent: editingOrder.urgent || false,
                 payment_method: editingOrder.payment_method || '',
                 discount: '',
-                notes: editingOrder.notes || '',
                 marcute: editingOrder.marcute || '',
                 data_comanda: editingOrder.data_comanda || '',
-                data_colectare: editingOrder.data_colectare || '',
-                data_returnare: editingOrder.data_returnare || '',
+                data_colectare: editingOrder.data_colectare || null,
+                data_returnare: editingOrder.data_returnare || null,
             });
             fetchOrderItems(editingOrder.id);
             fetchStatusHistory(editingOrder);
@@ -159,11 +158,10 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 urgent: false,
                 payment_method: 'Neachitat',
                 discount: '',
-                notes: '',
                 marcute: '',
                 data_comanda: new Date().toISOString(),
-                data_colectare: '',
-                data_returnare: ''
+                data_colectare: null,
+                data_returnare: null
             });
             setItems([]);
             setStatusHistory([]);
@@ -333,41 +331,55 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         const supabase = createClient();
         let order_id = orderId;
         let orderRes;
+        const wasNewOrder = !orderId;
 
-        const orderData = {
-            customer_id: form.customer_id,
-            status: form.status,
-            total_comanda_cu_discount: parseFloat(form.total) || 0,
-            date_created: form.date || new Date().toISOString(),
-            adresa_colectare_id: form.adresa_colectare_id,
-            adresa_returnare_id: form.adresa_returnare_id,
-            urgent: form.urgent,
-            payment_method: form.payment_method,
-            discount: parseFloat(form.discount || '0'),
-            notes: form.notes,
-            marcute: form.marcute,
-            data_comanda: form.data_comanda,
-            data_colectare: form.data_colectare,
-            data_returnare: form.data_returnare,
-        };
+        if (orderId) {
+            // Update: send all data
+            const orderData: any = {
+                customer_id: form.customer_id,
+                total_comanda_cu_discount: parseFloat(form.total) || 0,
+                adresa_colectare_id: form.adresa_colectare_id,
+                adresa_returnare_id: form.adresa_returnare_id,
+                urgent: form.urgent,
+                payment_method: form.payment_method,
+                discount: parseFloat(form.discount || '0'),
+                marcute: form.marcute,
+                data_comanda: form.data_comanda,
+                data_colectare: form.data_colectare || null,
+                data_returnare: form.data_returnare || null,
+            };
 
-        if (editingOrder) {
-            // Update
+            // Only include status if it has been changed from the initial 'noua'
+            if (form.status !== 'noua') {
+                orderData.status = form.status;
+            }
+
             orderRes = await supabase
                 .from('orders')
                 .update(orderData)
-                .eq('id', editingOrder.id)
+                .eq('id', orderId)
                 .select('id')
                 .single();
-            order_id = editingOrder.id;
+            order_id = orderId;
         } else {
-            // Insert
+            // Insert: send minimal data
+            const minimalOrderData = {
+                customer_id: form.customer_id,
+                data_comanda: form.data_comanda || new Date().toISOString().slice(0, 10),
+                // Defaults from DB schema
+                subtotal_articole: 0,
+                total_comanda_cu_discount: 0,
+            };
             orderRes = await supabase
                 .from('orders')
-                .insert(orderData)
+                .insert(minimalOrderData)
                 .select('id')
                 .single();
             order_id = orderRes.data?.id ?? null;
+            if (order_id) {
+                setOrderId(order_id);
+                justCreatedOrder.current = true;
+            }
         }
 
         if (orderRes.error || !order_id) {
@@ -378,7 +390,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
 
         // Upsert order_services
         let existingItems: any[] = [];
-        if (editingOrder) {
+        if (orderId) {
             const { data } = await supabase
                 .from('order_services')
                 .select('id')
@@ -386,7 +398,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
             existingItems = data || [];
         }
 
-        if (editingOrder) {
+        if (orderId) {
             const toDelete = existingItems.filter(ei => !items.some(i => i.id === ei.id));
             if (toDelete.length > 0) {
                 await supabase
@@ -418,7 +430,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
 
         setSaving(false);
         if (!silent) {
-            toast.success(editingOrder ? 'Comanda a fost actualizată!' : 'Comanda a fost adăugată!');
+            toast.success(wasNewOrder ? 'Comanda a fost adăugată!' : 'Comanda a fost actualizată!');
             onOpenChange(false);
             onSaved();
         }
@@ -427,14 +439,29 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     // Autosave
     const firstRender = useRef(true);
     useEffect(() => {
-        if (!open) return;
+        if (!open) {
+            firstRender.current = true; // Reset on close
+            return;
+        }
+
         if (firstRender.current) {
             firstRender.current = false;
             return;
         }
+
+        if (justCreatedOrder.current) {
+            justCreatedOrder.current = false; // Consume the flag and skip the first autosave
+            return;
+        }
+
+        // For new orders, only autosave if a customer is selected.
+        if (!orderId && !form.customer_id) {
+            return;
+        }
+
         const timeout = setTimeout(() => handleSaveOrder(true), 800);
         return () => clearTimeout(timeout);
-    }, [form, items, open]);
+    }, [form, items, open, orderId]);
 
     /* ---------- JSX ---------- */
     return (
@@ -443,7 +470,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 <SheetHeader className="p-4 border-b">
                     <SheetTitle className="flex gap-2 items-center">
                         <span className="font-bold text-lg">
-                            Comanda #{editingOrder?.id ?? 'Nouă'}
+                            Comanda #{orderId ?? 'Nouă'}
                         </span>
                         <span className="text-sm text-muted-foreground">
                             {form.date || new Date().toLocaleDateString()}
@@ -468,63 +495,63 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/25">
                         <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
                             <OrderStatusComponent
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 status={form.status}
                                 urgent={form.urgent}
                                 onStatusChange={status => setForm(f => ({ ...f, status }))}
                                 onUrgentChange={urgent => setForm(f => ({ ...f, urgent }))}
                             />
                             <OrderMarcute
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 value={form.marcute}
                                 onChange={marcute => setForm(f => ({ ...f, marcute }))}
                             />
                             <OrderCustomer
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 value={form.customer_id}
                                 onChange={(id) => {
-                                    setForm(f => ({ ...f, customer_id: id }));
+                                    setForm(f => ({ ...f, customer_id: id, adresa_colectare_id: undefined, adresa_returnare_id: undefined }));
                                     fetchAddresses(id);
                                 }}
                             />
                             <OrderAddress
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 type="colectare"
                                 value={form.adresa_colectare_id}
                                 onChange={id => setForm(f => ({ ...f, adresa_colectare_id: id }))}
-                                dateTime={form.data_colectare}
+                                dateTime={form.data_colectare ?? ''}
                                 onDateTimeChange={date => setForm(f => ({ ...f, data_colectare: date }))}
                                 customerId={form.customer_id}
                                 addresses={addresses}
                                 onAddAddress={handleAddAddress}
                             />
                             <OrderAddress
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 type="returnare"
                                 value={form.adresa_returnare_id}
                                 onChange={id => setForm(f => ({ ...f, adresa_returnare_id: id }))}
-                                dateTime={form.data_returnare}
+                                dateTime={form.data_returnare ?? ''}
                                 onDateTimeChange={date => setForm(f => ({ ...f, data_returnare: date }))}
                                 customerId={form.customer_id}
                                 addresses={addresses}
                                 onAddAddress={handleAddAddress}
                             />
                             <OrderPaymentMethod
-                                orderId={editingOrder?.id ?? null}
+                                orderId={orderId ?? null}
                                 value={form.payment_method}
                                 onChange={payment_method => setForm(f => ({ ...f, payment_method }))}
                             />
-                            <OrderDiscount orderId={editingOrder?.id ?? null} />
+                            <OrderDiscount orderId={orderId ?? null} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
-                            <OrderItems orderId={editingOrder?.id ?? null} />
+                            <OrderItems orderId={orderId ?? null} />
                         </TabsContent>
                         <TabsContent value="notite" className="m-0 flex flex-col gap-4">
-                            <OrderNotes orderId={editingOrder?.id ?? null} />
+                            <OrderNotes orderId={orderId ?? null} />
                         </TabsContent>
                     </main>
                 </Tabs>
-                <OrderFooter orderId={editingOrder?.id ?? null} />
+                <OrderFooter orderId={orderId ?? null} />
             </SheetContent>
         </Sheet>
     );
