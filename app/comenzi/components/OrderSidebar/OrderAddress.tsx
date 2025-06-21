@@ -70,15 +70,26 @@ export default function OrderAddress({
 
         setSaving(true);
         const supabase = createClient();
-        const field = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
+        const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
+        const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
+
+        const dateToSave = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
+            ? new Date(dateTime)
+            : new Date();
+
         const { error } = await supabase
             .from('orders')
-            .update({ [field]: newId })
+            .update({
+                [addressField]: newId,
+                [dateTimeField]: dateToSave.toISOString(),
+            })
             .eq('id', orderId);
+
         setSaving(false);
         if (error) {
             toast.error('Eroare la salvarea adresei: ' + error.message);
         } else if (addressId) {
+            onDateTimeChange(dateToSave.toISOString());
             setIsActive(true);
         }
     };
@@ -121,8 +132,8 @@ export default function OrderAddress({
         }
     };
 
-    const updateDateTimeInDb = async (newDateTime: Date) => {
-        onDateTimeChange(newDateTime.toISOString());
+    const updateDateTimeInDb = async (newDateTime: Date | null) => {
+        onDateTimeChange(newDateTime ? newDateTime.toISOString() : '');
         if (!orderId) return;
 
         setSaving(true);
@@ -130,7 +141,7 @@ export default function OrderAddress({
         const field = type === 'colectare' ? 'data_colectare' : 'data_returnare';
         const { error } = await supabase
             .from('orders')
-            .update({ [field]: newDateTime.toISOString() })
+            .update({ [field]: newDateTime ? newDateTime.toISOString() : null })
             .eq('id', orderId);
         setSaving(false);
         if (error) {
@@ -139,9 +150,15 @@ export default function OrderAddress({
     };
 
     const handleDateChange = (selectedDate: Date | undefined) => {
-        if (!selectedDate) return;
+        if (!selectedDate) {
+            updateDateTimeInDb(null);
+            return;
+        }
 
-        const current = dateTime ? new Date(dateTime) : new Date();
+        const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
+            ? new Date(dateTime)
+            : new Date();
+
         current.setFullYear(selectedDate.getFullYear());
         current.setMonth(selectedDate.getMonth());
         current.setDate(selectedDate.getDate());
@@ -150,14 +167,18 @@ export default function OrderAddress({
 
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const [hours, minutes] = e.target.value.split(':').map(Number);
-        const current = dateTime ? new Date(dateTime) : new Date();
-        current.setHours(hours, minutes, current.getSeconds(), current.getMilliseconds());
+
+        const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
+            ? new Date(dateTime)
+            : new Date();
+
+        current.setHours(hours, minutes);
         updateDateTimeInDb(current);
     };
 
 
     const title = type === 'colectare' ? 'Adresă Colectare' : 'Adresă Returnare';
-    const currentDateTime = dateTime ? new Date(dateTime) : null;
+    const currentDateTime = (dateTime && new Date(dateTime).toString() !== 'Invalid Date') ? new Date(dateTime) : null;
 
     return (
         <Card className="p-4 flex flex-col gap-2">
