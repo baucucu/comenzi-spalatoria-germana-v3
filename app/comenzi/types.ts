@@ -27,6 +27,7 @@ export interface Order {
     data_comanda?: string;
     data_colectare?: string;
     data_returnare?: string;
+    marcute?: string;
     adresa_colectare?: { adresa: string } | null;
     adresa_returnare?: { adresa: string } | null;
 }

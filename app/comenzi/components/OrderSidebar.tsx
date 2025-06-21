@@ -42,6 +42,7 @@ import OrderDiscount from "./OrderSidebar/OrderDiscount";
 import OrderItems from "./OrderSidebar/OrderItems";
 import OrderFooter from "./OrderSidebar/OrderFooter";
 import OrderNotes from "./OrderSidebar/OrderNotes";
+import OrderMarcute from "./OrderSidebar/OrderMarcute";
 
 import {
     Order,
@@ -476,6 +477,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/25">
                         <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
                             <OrderStatusComponent orderId={editingOrder?.id ?? null} />
+                            <OrderMarcute orderId={editingOrder?.id ?? null} />
                             <OrderCustomer orderId={editingOrder?.id ?? null} />
                             <OrderAddress orderId={editingOrder?.id ?? null} type="colectare" />
                             <OrderAddress orderId={editingOrder?.id ?? null} type="returnare" />
