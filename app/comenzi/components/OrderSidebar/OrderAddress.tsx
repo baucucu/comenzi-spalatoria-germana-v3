@@ -151,7 +151,7 @@ export default function OrderAddress({
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const [hours, minutes] = e.target.value.split(':').map(Number);
         const current = dateTime ? new Date(dateTime) : new Date();
-        current.setHours(hours, minutes);
+        current.setHours(hours, minutes, current.getSeconds(), current.getMilliseconds());
         updateDateTimeInDb(current);
     };
 
