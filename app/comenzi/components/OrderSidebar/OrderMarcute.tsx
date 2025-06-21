@@ -9,35 +9,18 @@ import { toast } from "sonner";
 
 interface OrderMarcuteProps {
     orderId: number | null;
+    value: string;
+    onChange: (value: string) => void;
 }
 
-export default function OrderMarcute({ orderId }: OrderMarcuteProps) {
-    const [marcute, setMarcute] = useState('');
-    const [initialMarcute, setInitialMarcute] = useState('');
+export default function OrderMarcute({ orderId, value, onChange }: OrderMarcuteProps) {
+    const [initialMarcute, setInitialMarcute] = useState(value);
 
     const supabase = createClient();
 
-    const fetchMarcute = useCallback(async () => {
-        if (!orderId) return;
-
-        const { data, error } = await supabase
-            .from('orders')
-            .select('marcute')
-            .eq('id', orderId)
-            .single();
-
-        if (error) {
-            console.error("Error fetching marcute:", error);
-        } else if (data) {
-            const fetchedMarcute = data.marcute || '';
-            setMarcute(fetchedMarcute);
-            setInitialMarcute(fetchedMarcute);
-        }
-    }, [orderId, supabase]);
-
     useEffect(() => {
-        fetchMarcute();
-    }, [fetchMarcute]);
+        setInitialMarcute(value);
+    }, [value]);
 
     const updateMarcute = useCallback(async (newMarcute: string) => {
         if (!orderId) return;
@@ -57,25 +40,23 @@ export default function OrderMarcute({ orderId }: OrderMarcuteProps) {
 
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (marcute !== initialMarcute) {
-                updateMarcute(marcute);
+            if (value !== initialMarcute) {
+                updateMarcute(value);
             }
         }, 800);
 
         return () => {
             clearTimeout(handler);
         };
-    }, [marcute, initialMarcute, updateMarcute]);
-
-    if (!orderId) return null;
+    }, [value, initialMarcute, updateMarcute]);
 
     return (
         <Card className="p-4 flex flex-col gap-2">
             <Label htmlFor="marcute">Marcute</Label>
             <Textarea
                 id="marcute"
-                value={marcute}
-                onChange={(e) => setMarcute(e.target.value)}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
                 placeholder="Adaugă marcute..."
                 className="min-h-[100px]"
             />

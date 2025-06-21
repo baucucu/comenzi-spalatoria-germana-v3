@@ -43,7 +43,6 @@ import OrderItems from "./OrderSidebar/OrderItems";
 import OrderFooter from "./OrderSidebar/OrderFooter";
 import OrderNotes from "./OrderSidebar/OrderNotes";
 import OrderMarcute from "./OrderSidebar/OrderMarcute";
-import OrderStatus from "./OrderSidebar/OrderStatus";
 
 import {
     Order,
@@ -103,6 +102,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         payment_method: '',
         discount: '',
         notes: '',
+        marcute: '',
         data_comanda: '',
         data_colectare: '',
         data_returnare: ''
@@ -140,6 +140,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 payment_method: editingOrder.payment_method || '',
                 discount: '',
                 notes: editingOrder.notes || '',
+                marcute: editingOrder.marcute || '',
                 data_comanda: editingOrder.data_comanda || '',
                 data_colectare: editingOrder.data_colectare || '',
                 data_returnare: editingOrder.data_returnare || '',
@@ -159,6 +160,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 payment_method: 'Neachitat',
                 discount: '',
                 notes: '',
+                marcute: '',
                 data_comanda: new Date().toISOString(),
                 data_colectare: '',
                 data_returnare: ''
@@ -343,6 +345,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
             payment_method: form.payment_method,
             discount: parseFloat(form.discount || '0'),
             notes: form.notes,
+            marcute: form.marcute,
             data_comanda: form.data_comanda,
             data_colectare: form.data_colectare,
             data_returnare: form.data_returnare,
@@ -471,7 +474,11 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                                 onStatusChange={status => setForm(f => ({ ...f, status }))}
                                 onUrgentChange={urgent => setForm(f => ({ ...f, urgent }))}
                             />
-                            <OrderMarcute orderId={editingOrder?.id ?? null} />
+                            <OrderMarcute
+                                orderId={editingOrder?.id ?? null}
+                                value={form.marcute}
+                                onChange={marcute => setForm(f => ({ ...f, marcute }))}
+                            />
                             <OrderCustomer
                                 orderId={editingOrder?.id ?? null}
                                 value={form.customer_id}
