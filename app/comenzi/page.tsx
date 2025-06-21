@@ -2,7 +2,7 @@
 import { PageContentWrapper } from "@/components/ui/page-content-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,7 +29,7 @@ export default function ComenziPage() {
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [calendarOpen, setCalendarOpen] = useState(false);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         setLoading(true);
         const supabase = createClient();
         let query = supabase
@@ -96,12 +96,27 @@ export default function ComenziPage() {
             }))
         );
         setLoading(false);
-    };
+    }, [search, statusFilter, dateRange]);
 
     useEffect(() => {
         fetchOrders();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, statusFilter, dateRange]);
+
+        const supabase = createClient();
+        const channel = supabase
+            .channel('orders')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'orders' },
+                () => {
+                    fetchOrders();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [fetchOrders]);
 
     const handleAddOrder = () => {
         setEditingOrder(null);
