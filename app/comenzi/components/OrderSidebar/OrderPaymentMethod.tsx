@@ -15,39 +15,17 @@ import { Card } from '@/components/ui/card';
 
 interface OrderPaymentMethodProps {
     orderId: number | null;
+    value: string;
+    onChange: (value: string) => void;
 }
 
-export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps) {
-    const [paymentMethod, setPaymentMethod] = useState<string>('Neachitat');
+export default function OrderPaymentMethod({ orderId, value, onChange }: OrderPaymentMethodProps) {
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
+    const handlePaymentMethodChange = async (newValue: string) => {
+        onChange(newValue); // Immediately update parent state
+
         if (!orderId) {
-            setPaymentMethod('Neachitat');
-            return;
-        }
-
-        const fetchPaymentMethod = async () => {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from('orders')
-                .select('payment_method')
-                .eq('id', orderId)
-                .single();
-
-            if (error) {
-                toast.error('Eroare la încărcarea metodei de plată: ' + error.message);
-            }
-
-            setPaymentMethod(data?.payment_method || 'Neachitat');
-        };
-
-        fetchPaymentMethod();
-    }, [orderId]);
-
-    const handlePaymentMethodChange = async (value: string) => {
-        if (!orderId) {
-            setPaymentMethod(value);
             return;
         }
 
@@ -55,24 +33,23 @@ export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps)
         const supabase = createClient();
         const { error } = await supabase
             .from('orders')
-            .update({ payment_method: value })
+            .update({ payment_method: newValue })
             .eq('id', orderId);
 
         setSaving(false);
 
         if (error) {
             toast.error('Eroare la salvarea metodei de plată: ' + error.message);
+            onChange(value); // Revert on error
             return;
         }
-
-        setPaymentMethod(value);
     };
 
     return (
         <Card className="p-4 flex flex-col gap-2">
             <Label>Metodă de plată</Label>
             <Select
-                value={paymentMethod}
+                value={value}
                 onValueChange={handlePaymentMethodChange}
                 disabled={saving}
             >

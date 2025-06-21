@@ -21,9 +21,20 @@ interface OrderStatusType {
     color: string;
 }
 
-export default function OrderStatus({ orderId }: { orderId?: number | null }) {
+export default function OrderStatus({
+    orderId,
+    status,
+    urgent,
+    onStatusChange,
+    onUrgentChange,
+}: {
+    orderId?: number | null;
+    status: string;
+    urgent: boolean;
+    onStatusChange: (status: string) => void;
+    onUrgentChange: (urgent: boolean) => void;
+}) {
     const [statuses, setStatuses] = useState<OrderStatusType[]>([]);
-    const [order, setOrder] = useState<{ status: string; urgent: boolean } | null>(null);
     const [updating, setUpdating] = useState(false);
 
     // Fetch statuses
@@ -38,27 +49,14 @@ export default function OrderStatus({ orderId }: { orderId?: number | null }) {
         fetchStatuses();
     }, []);
 
-    // Fetch order status & urgent
-    useEffect(() => {
-        const fetchOrder = async () => {
-            if (!orderId) {
-                setOrder(null);
-                return;
-            }
-            const supabase = createClient();
-            const { data } = await supabase
-                .from("orders")
-                .select("status, urgent")
-                .eq("id", orderId)
-                .single();
-            if (data) setOrder(data);
-        };
-        fetchOrder();
-    }, [orderId]);
-
     // Update status or urgent
     const updateOrder = async (values: Partial<{ status: string; urgent: boolean }>) => {
-        if (!orderId) return;
+        if (!orderId) {
+            if (values.status !== undefined) onStatusChange(values.status);
+            if (values.urgent !== undefined) onUrgentChange(values.urgent);
+            return;
+        }
+
         setUpdating(true);
         const supabase = createClient();
         const { error } = await supabase
@@ -67,7 +65,8 @@ export default function OrderStatus({ orderId }: { orderId?: number | null }) {
             .eq("id", orderId);
         setUpdating(false);
         if (!error) {
-            setOrder(prev => ({ ...prev!, ...values }));
+            if (values.status) onStatusChange(values.status);
+            if (values.urgent !== undefined) onUrgentChange(values.urgent);
             toast.success("Comandă actualizată!");
         } else {
             toast.error("Eroare la actualizare: " + error.message);
@@ -78,8 +77,8 @@ export default function OrderStatus({ orderId }: { orderId?: number | null }) {
         <Card className="p-4 flex flex-col gap-2">
             <Label>Status comandă</Label>
             <Select
-                value={order?.status ?? ""}
-                onValueChange={status => updateOrder({ status })}
+                value={status}
+                onValueChange={s => updateOrder({ status: s })}
                 disabled={updating}
             >
                 <SelectTrigger className="w-full">
@@ -96,8 +95,8 @@ export default function OrderStatus({ orderId }: { orderId?: number | null }) {
             <div className="flex items-center gap-2 mt-2">
                 <Label htmlFor="urgent-switch">Urgent</Label>
                 <Switch
-                    checked={!!order?.urgent}
-                    onCheckedChange={urgent => updateOrder({ urgent })}
+                    checked={urgent}
+                    onCheckedChange={u => updateOrder({ urgent: u })}
                     disabled={updating}
                     id="urgent-switch"
                 />

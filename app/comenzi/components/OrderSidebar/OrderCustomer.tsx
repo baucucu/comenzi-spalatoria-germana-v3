@@ -18,7 +18,15 @@ import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCustomer } from "./useCustomer";
 
-export default function OrderCustomer({ orderId }: { orderId?: number | null }) {
+export default function OrderCustomer({
+    orderId,
+    value,
+    onChange,
+}: {
+    orderId?: number | null,
+    value?: string,
+    onChange?: (id: string) => void,
+}) {
     const {
         customers,
         customerSearch,
@@ -31,7 +39,7 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
         selectedCustomerId,
         handleAddCustomer,
         handleCustomerChange
-    } = useCustomer(orderId);
+    } = useCustomer(orderId, value, onChange);
 
     const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
 

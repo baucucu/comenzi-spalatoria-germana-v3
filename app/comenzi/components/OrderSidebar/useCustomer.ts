@@ -10,7 +10,11 @@ interface CustomerFull {
     telefon: string;
 }
 
-export function useCustomer(orderId?: number | null) {
+export function useCustomer(
+    orderId?: number | null,
+    controlledCustomerId?: string,
+    onCustomerChange?: (id: string) => void,
+) {
     const [customers, setCustomers] = useState<CustomerFull[]>([]);
     const [customerSearch, setCustomerSearch] = useState("");
     const [addCustomerOpen, setAddCustomerOpen] = useState(false);
@@ -18,7 +22,14 @@ export function useCustomer(orderId?: number | null) {
     const [addingCustomer, setAddingCustomer] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
 
-    // Fetch order's customer when orderId changes
+    useEffect(() => {
+        // If controlled, sync with prop
+        if (controlledCustomerId !== undefined) {
+            setSelectedCustomerId(controlledCustomerId);
+        }
+    }, [controlledCustomerId]);
+
+    // Fetch order's customer when orderId changes (if uncontrolled)
     useEffect(() => {
         const fetchOrderCustomer = async () => {
             if (!orderId) {
@@ -33,8 +44,11 @@ export function useCustomer(orderId?: number | null) {
                 .single();
             if (data) setSelectedCustomerId(data.customer_id);
         };
-        fetchOrderCustomer();
-    }, [orderId]);
+
+        if (controlledCustomerId === undefined) {
+            fetchOrderCustomer();
+        }
+    }, [orderId, controlledCustomerId]);
 
     // Fetch customers when search changes
     useEffect(() => {
@@ -107,6 +121,10 @@ export function useCustomer(orderId?: number | null) {
     // Update order's customer
     const handleCustomerChange = async (customerId: string) => {
         setSelectedCustomerId(customerId);
+        if (onCustomerChange) {
+            onCustomerChange(customerId);
+        }
+
         if (!orderId) return;
 
         const supabase = createClient();

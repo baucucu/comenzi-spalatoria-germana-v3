@@ -25,104 +25,60 @@ import { ro } from 'date-fns/locale';
 interface Address {
     id: number;
     adresa: string;
-    detalii: string;
+    detalii?: string;
 }
 
 interface OrderAddressProps {
     orderId: number | null;
     type: 'colectare' | 'returnare';
+    value: number | undefined;
+    onChange: (id: number | undefined) => void;
+    dateTime: string;
+    onDateTimeChange: (date: string) => void;
+    customerId: string | null;
+    addresses: Address[];
+    onAddAddress: (address: { adresa: string, detalii: string }) => Promise<Address | null>;
 }
 
-export default function OrderAddress({ orderId, type }: OrderAddressProps) {
-    const [customerId, setCustomerId] = useState<string | null>(null);
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [selectedAddress, setSelectedAddress] = useState<string>('');
+export default function OrderAddress({
+    orderId,
+    type,
+    value,
+    onChange,
+    dateTime,
+    onDateTimeChange,
+    customerId,
+    addresses,
+    onAddAddress,
+}: OrderAddressProps) {
     const [addOpen, setAddOpen] = useState(false);
     const [newAddress, setNewAddress] = useState({ adresa: '', detalii: '' });
     const [saving, setSaving] = useState(false);
     const [isActive, setIsActive] = useState(false);
-    const [dateTime, setDateTime] = useState<Date | null>(null);
 
-    // Fetch customerId for the order
     useEffect(() => {
-        if (!orderId) {
-            setCustomerId(null);
-            setIsActive(false);
-            setSelectedAddress('');
-            return;
-        }
-        const fetchOrderData = async () => {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from('orders')
-                .select(
-                    'customer_id, adresa_colectare_id, adresa_returnare_id, data_colectare, data_returnare'
-                )
-                .eq('id', orderId)
-                .single();
-            if (error) {
-                setCustomerId(null);
-                return;
-            }
-            setCustomerId(data.customer_id);
+        setIsActive(!!value);
+    }, [value]);
 
-            const addressId =
-                type === 'colectare'
-                    ? data.adresa_colectare_id
-                    : data.adresa_returnare_id;
-
-            const dateTimeValue =
-                type === 'colectare' ? data.data_colectare : data.data_returnare;
-            setDateTime(dateTimeValue ? new Date(dateTimeValue) : null);
-
-            if (addressId) {
-                setSelectedAddress(addressId.toString());
-                setIsActive(true);
-            } else {
-                setSelectedAddress('');
-                setIsActive(false);
-            }
-        };
-        fetchOrderData();
-    }, [orderId, type]);
-
-    // Fetch addresses for customer
-    useEffect(() => {
-        if (!customerId) {
-            setAddresses([]);
-            return;
-        }
-        const fetchAddresses = async () => {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from('addresses')
-                .select('id, adresa, detalii')
-                .eq('customer_id', customerId)
-                .order('id');
-            if (error) {
-                toast.error('Eroare la încărcarea adreselor: ' + error.message);
-                return;
-            }
-            setAddresses(data || []);
-        };
-        fetchAddresses();
-    }, [customerId]);
 
     // Save selected address to order
-    const handleAddressChange = async (value: string) => {
-        setSelectedAddress(value);
-        if (!orderId) return;
+    const handleAddressChange = async (addressId: string) => {
+        const newId = addressId ? parseInt(addressId) : undefined;
+        onChange(newId);
+
+        if (!orderId || newId === undefined) return;
+
         setSaving(true);
         const supabase = createClient();
         const field = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
         const { error } = await supabase
             .from('orders')
-            .update({ [field]: value ? parseInt(value) : null })
+            .update({ [field]: newId })
             .eq('id', orderId);
         setSaving(false);
         if (error) {
             toast.error('Eroare la salvarea adresei: ' + error.message);
-        } else if (value) {
+        } else if (addressId) {
             setIsActive(true);
         }
     };
@@ -131,30 +87,22 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
     const handleAddAddress = async () => {
         if (!customerId) return;
         setSaving(true);
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from('addresses')
-            .insert({ ...newAddress, customer_id: customerId })
-            .select()
-            .single();
+        const addedAddress = await onAddAddress(newAddress);
         setSaving(false);
-        if (error) {
-            toast.error('Eroare la adăugarea adresei: ' + error.message);
-            return;
+        if (addedAddress) {
+            await handleAddressChange(addedAddress.id.toString());
+            setAddOpen(false);
+            setNewAddress({ adresa: '', detalii: '' });
+            toast.success('Adresă adăugată!');
         }
-        setAddresses(prev => [data, ...prev]);
-        setSelectedAddress(data.id.toString());
-        setAddOpen(false);
-        setNewAddress({ adresa: '', detalii: '' });
-        // Save new address to order
-        if (orderId) {
-            await handleAddressChange(data.id.toString());
-        }
-        toast.success('Adresă adăugată!');
     };
 
     const handleCancelAddress = async () => {
+        onChange(undefined);
+        onDateTimeChange('');
+
         if (!orderId) return;
+
         setSaving(true);
         const supabase = createClient();
         const field =
@@ -169,15 +117,14 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
         if (error) {
             toast.error('Eroare la anularea adresei: ' + error.message);
         } else {
-            setSelectedAddress('');
-            setDateTime(null);
-            setIsActive(false);
             setAddOpen(false);
         }
     };
 
     const updateDateTimeInDb = async (newDateTime: Date) => {
+        onDateTimeChange(newDateTime.toISOString());
         if (!orderId) return;
+
         setSaving(true);
         const supabase = createClient();
         const field = type === 'colectare' ? 'data_colectare' : 'data_returnare';
@@ -194,171 +141,134 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
     const handleDateChange = (selectedDate: Date | undefined) => {
         if (!selectedDate) return;
 
-        const newDateTime = dateTime ? new Date(dateTime) : new Date();
-        newDateTime.setFullYear(selectedDate.getFullYear());
-        newDateTime.setMonth(selectedDate.getMonth());
-        newDateTime.setDate(selectedDate.getDate());
-
-        if (!dateTime) {
-            newDateTime.setHours(12, 0, 0, 0);
-        }
-
-        setDateTime(newDateTime);
-        updateDateTimeInDb(newDateTime);
+        const current = dateTime ? new Date(dateTime) : new Date();
+        current.setFullYear(selectedDate.getFullYear());
+        current.setMonth(selectedDate.getMonth());
+        current.setDate(selectedDate.getDate());
+        updateDateTimeInDb(current);
     };
 
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const timeValue = e.target.value;
-        if (!timeValue) return;
-
-        const [hours, minutes] = timeValue.split(':').map(Number);
-        if (isNaN(hours) || isNaN(minutes)) return;
-
-        const newDateTime = dateTime ? new Date(dateTime) : new Date();
-        newDateTime.setHours(hours, minutes, 0, 0);
-
-        setDateTime(newDateTime);
-        updateDateTimeInDb(newDateTime);
+        const [hours, minutes] = e.target.value.split(':').map(Number);
+        const current = dateTime ? new Date(dateTime) : new Date();
+        current.setHours(hours, minutes);
+        updateDateTimeInDb(current);
     };
 
-    if (!customerId) {
-        return null;
-    }
+
+    const title = type === 'colectare' ? 'Adresă Colectare' : 'Adresă Returnare';
+    const currentDateTime = dateTime ? new Date(dateTime) : null;
 
     return (
-        <Card className="p-4 flex flex-col gap-2 relative">
-            <Label>
-                {type === 'colectare' ? 'Adresă colectare' : 'Adresă returnare'}
-            </Label>
-            {!isActive ? (
-                <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsActive(true)}
-                    disabled={saving}
-                >
-                    {`Adaugă adresă de ${type}`}
-                </Button>
-            ) : (
-                <>
+        <Card className="p-4 flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+                <Label>{title}</Label>
+                {isActive && (
                     <Button
                         variant="ghost"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 text-red-500 hover:text-red-700"
+                        size="sm"
                         onClick={handleCancelAddress}
                         disabled={saving}
                     >
-                        <X className="h-4 w-4" />
+                        <X className="w-4 h-4 mr-2" />
+                        Anulează
                     </Button>
-                    <div className="flex flex-col gap-2 pt-2">
-                        <Select
-                            value={selectedAddress}
-                            onValueChange={handleAddressChange}
-                            disabled={saving || addresses.length === 0}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selectează adresa" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {addresses.map(addr => (
-                                    <SelectItem
-                                        key={addr.id}
-                                        value={addr.id.toString()}
-                                    >
-                                        {addr.adresa}{' '}
-                                        {addr.detalii ? `(${addr.detalii})` : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                )}
+            </div>
 
-                        {selectedAddress && (
-                            <div className="flex flex-col gap-2 pt-2">
-                                <Label>Data și ora de {type}</Label>
-                                <div className="flex gap-2">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant={'outline'}
-                                                className="flex-1 justify-start text-left font-normal"
-                                                disabled={saving}
-                                            >
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {dateTime ? (
-                                                    format(dateTime, 'PPP', {
-                                                        locale: ro,
-                                                    })
-                                                ) : (
-                                                    <span>Alege data</span>
-                                                )}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                                mode="single"
-                                                selected={dateTime ?? undefined}
-                                                onSelect={handleDateChange}
-                                                initialFocus
-                                                locale={ro}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Input
-                                        type="time"
-                                        value={
-                                            dateTime
-                                                ? format(dateTime, 'HH:mm')
-                                                : ''
-                                        }
-                                        onChange={handleTimeChange}
-                                        disabled={saving || !dateTime}
-                                        className="w-32"
-                                    />
-                                </div>
-                            </div>
-                        )}
+            {!isActive && (
+                <Button
+                    variant="secondary"
+                    onClick={() => setIsActive(true)}
+                    disabled={!customerId}
+                >
+                    Setează {title}
+                </Button>
+            )}
 
-                        <Button
-                            size="sm"
-                            variant={addOpen ? 'destructive' : 'secondary'}
-                            onClick={() => setAddOpen(v => !v)}
-                            disabled={saving}
-                        >
-                            {addOpen ? 'Anulează' : 'Adaugă adresă nouă'}
-                        </Button>
-                    </div>
+            {isActive && (
+                <>
+                    <Select
+                        value={value?.toString() ?? ''}
+                        onValueChange={handleAddressChange}
+                        disabled={saving || !customerId}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selectează o adresă..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {addresses.map(addr => (
+                                <SelectItem key={addr.id} value={addr.id.toString()}>
+                                    {addr.adresa}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Button
+                        size="sm"
+                        variant={addOpen ? 'destructive' : 'secondary'}
+                        onClick={() => setAddOpen(v => !v)}
+                        disabled={!customerId}
+                    >
+                        {addOpen ? 'Anulează' : 'Adaugă adresă nouă'}
+                    </Button>
+
                     {addOpen && (
                         <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                             <GeoapifyAutocomplete
                                 value={newAddress.adresa}
-                                onChange={val =>
-                                    setNewAddress(a => ({ ...a, adresa: val }))
+                                onChange={adresa =>
+                                    setNewAddress(prev => ({ ...prev, adresa }))
                                 }
-                                placeholder="Adresă (București sau Ilfov)"
+                                placeholder="Caută adresă..."
                             />
-                            <textarea
-                                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring resize-none min-h-[40px]"
-                                placeholder="Detalii (opțional)"
+                            <Input
+                                placeholder="Detalii (apt, interfon...)"
                                 value={newAddress.detalii}
                                 onChange={e =>
-                                    setNewAddress(a => ({
-                                        ...a,
-                                        detalii: e.target.value,
-                                    }))
+                                    setNewAddress(prev => ({ ...prev, detalii: e.target.value }))
                                 }
-                                disabled={saving}
-                                rows={2}
                             />
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleAddAddress}
-                                disabled={saving || !newAddress.adresa}
-                            >
+                            <Button size="sm" onClick={handleAddAddress} disabled={saving}>
                                 {saving ? 'Se adaugă...' : 'Salvează adresa'}
                             </Button>
                         </div>
                     )}
+                    <div className="flex gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={'outline'}
+                                    className="flex-1"
+                                    disabled={saving}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {currentDateTime ? (
+                                        format(currentDateTime, 'PPP', { locale: ro })
+                                    ) : (
+                                        <span>Alege data</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={currentDateTime ?? undefined}
+                                    onSelect={handleDateChange}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <Input
+                            type="time"
+                            className="w-32"
+                            value={currentDateTime ? format(currentDateTime, 'HH:mm') : ''}
+                            onChange={handleTimeChange}
+                            disabled={saving}
+                        />
+                    </div>
+
                 </>
             )}
         </Card>

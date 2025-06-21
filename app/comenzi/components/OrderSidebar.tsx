@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/command";
 import { ChevronsUpDown, Check, Paperclip, Shirt, Notebook } from "lucide-react";
 import { cn } from "@/lib/utils";
-import OrderStatusComponent from "./OrderSidebar/OrderStatus";
+import OrderStatusComponent from "./OrderSidebar/OrderStatusComponent";
 import OrderCustomer from "./OrderSidebar/OrderCustomer";
 import OrderAddress from "./OrderSidebar/OrderAddress";
 import OrderPaymentMethod from "./OrderSidebar/OrderPaymentMethod";
@@ -43,6 +43,7 @@ import OrderItems from "./OrderSidebar/OrderItems";
 import OrderFooter from "./OrderSidebar/OrderFooter";
 import OrderNotes from "./OrderSidebar/OrderNotes";
 import OrderMarcute from "./OrderSidebar/OrderMarcute";
+import OrderStatus from "./OrderSidebar/OrderStatus";
 
 import {
     Order,
@@ -92,7 +93,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     const [discounts, setDiscounts] = useState<Discount[]>([]);
 
     const [form, setForm] = useState({
-        customer: "",
+        customer_id: "",
         status: "",
         total: "",
         date: "",
@@ -129,7 +130,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         if (editingOrder) {
             setOrderId(editingOrder.id);
             setForm({
-                customer: editingOrder.customers?.id || "",
+                customer_id: editingOrder.customers?.id || "",
                 status: editingOrder.status || "",
                 total: editingOrder.total_comanda_cu_discount.toString(),
                 date: editingOrder.date_created ? editingOrder.date_created.slice(0, 10) : "",
@@ -148,24 +149,24 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         } else {
             setOrderId(null);
             setForm({
-                customer: "",
-                status: "",
-                total: "",
-                date: "",
+                customer_id: "",
+                status: 'noua',
+                total: "0",
+                date: new Date().toISOString().slice(0, 10),
                 adresa_colectare_id: undefined,
                 adresa_returnare_id: undefined,
                 urgent: false,
-                payment_method: '',
+                payment_method: 'Neachitat',
                 discount: '',
                 notes: '',
-                data_comanda: '',
+                data_comanda: new Date().toISOString(),
                 data_colectare: '',
                 data_returnare: ''
             });
             setItems([]);
             setStatusHistory([]);
         }
-    }, [editingOrder, open]);
+    }, [editingOrder, open, statuses]);
 
     // Fetch customers when the search text changes
     const fetchCustomers = async (search = "") => {
@@ -219,8 +220,8 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         if (data) setAddresses(data);
     };
     useEffect(() => {
-        if (open) fetchAddresses(form.customer);
-    }, [form.customer, open]);
+        if (open) fetchAddresses(form.customer_id);
+    }, [form.customer_id, open]);
 
     // Fetch discounts when sidebar opens
     const fetchDiscounts = async () => {
@@ -264,34 +265,33 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
             toast.error("Eroare la adăugarea clientului: " + error.message);
         } else if (data) {
             setCustomers(prev => [data, ...prev]);
-            setForm(f => ({ ...f, customer: data.id }));
+            setForm(f => ({ ...f, customer_id: data.id }));
             setAddCustomerOpen(false);
             setNewCustomer({ nume: "", prenume: "", email: "", telefon: "" });
             toast.success("Client adăugat!");
         }
     };
 
-    const handleAddAddress = async (type: 'colectare' | 'returnare') => {
+    const handleAddAddress = async (address: { adresa: string, detalii: string }) => {
+        if (!form.customer_id) return null;
         setAddingAddress(true);
         const supabase = createClient();
         const { data, error } = await supabase
             .from('addresses')
-            .insert({ ...newAddress, customer_id: form.customer })
+            .insert({ ...address, customer_id: form.customer_id })
             .select()
             .single();
         setAddingAddress(false);
         if (error) {
             toast.error('Eroare la adăugarea adresei: ' + error.message);
-        } else if (data) {
-            setAddresses(prev => [data, ...prev]);
-            setForm(f => ({
-                ...f,
-                [type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id']: data.id,
-            }));
-            setAddAddressOpen({ type: null });
-            setNewAddress({ adresa: '', detalii: '' });
-            toast.success('Adresă adăugată!');
+            return null;
         }
+        if (data) {
+            setAddresses(prev => [data, ...prev]);
+            toast.success('Adresă adăugată!');
+            return data;
+        }
+        return null;
     };
 
     /* ---------- Items helpers ---------- */
@@ -332,25 +332,27 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         let order_id = orderId;
         let orderRes;
 
+        const orderData = {
+            customer_id: form.customer_id,
+            status: form.status,
+            total_comanda_cu_discount: parseFloat(form.total) || 0,
+            date_created: form.date || new Date().toISOString(),
+            adresa_colectare_id: form.adresa_colectare_id,
+            adresa_returnare_id: form.adresa_returnare_id,
+            urgent: form.urgent,
+            payment_method: form.payment_method,
+            discount: parseFloat(form.discount || '0'),
+            notes: form.notes,
+            data_comanda: form.data_comanda,
+            data_colectare: form.data_colectare,
+            data_returnare: form.data_returnare,
+        };
+
         if (editingOrder) {
             // Update
             orderRes = await supabase
                 .from('orders')
-                .update({
-                    customer_id: form.customer,
-                    status: form.status,
-                    total_comanda_cu_discount: parseFloat(form.total),
-                    date_created: form.date || new Date().toISOString(),
-                    adresa_colectare_id: form.adresa_colectare_id,
-                    adresa_returnare_id: form.adresa_returnare_id,
-                    urgent: form.urgent,
-                    payment_method: form.payment_method,
-                    discount: parseFloat(form.discount || '0'),
-                    notes: form.notes,
-                    data_comanda: form.data_comanda,
-                    data_colectare: form.data_colectare,
-                    data_returnare: form.data_returnare,
-                })
+                .update(orderData)
                 .eq('id', editingOrder.id)
                 .select('id')
                 .single();
@@ -359,21 +361,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
             // Insert
             orderRes = await supabase
                 .from('orders')
-                .insert({
-                    customer_id: form.customer,
-                    status: form.status,
-                    total_comanda_cu_discount: parseFloat(form.total),
-                    date_created: form.date || new Date().toISOString(),
-                    adresa_colectare_id: form.adresa_colectare_id,
-                    adresa_returnare_id: form.adresa_returnare_id,
-                    urgent: form.urgent,
-                    payment_method: form.payment_method,
-                    discount: parseFloat(form.discount || '0'),
-                    notes: form.notes,
-                    data_comanda: form.data_comanda,
-                    data_colectare: form.data_colectare,
-                    data_returnare: form.data_returnare,
-                })
+                .insert(orderData)
                 .select('id')
                 .single();
             order_id = orderRes.data?.id ?? null;
@@ -476,12 +464,49 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                     </TabsList>
                     <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/25">
                         <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
-                            <OrderStatusComponent orderId={editingOrder?.id ?? null} />
+                            <OrderStatusComponent
+                                orderId={editingOrder?.id ?? null}
+                                status={form.status}
+                                urgent={form.urgent}
+                                onStatusChange={status => setForm(f => ({ ...f, status }))}
+                                onUrgentChange={urgent => setForm(f => ({ ...f, urgent }))}
+                            />
                             <OrderMarcute orderId={editingOrder?.id ?? null} />
-                            <OrderCustomer orderId={editingOrder?.id ?? null} />
-                            <OrderAddress orderId={editingOrder?.id ?? null} type="colectare" />
-                            <OrderAddress orderId={editingOrder?.id ?? null} type="returnare" />
-                            <OrderPaymentMethod orderId={editingOrder?.id ?? null} />
+                            <OrderCustomer
+                                orderId={editingOrder?.id ?? null}
+                                value={form.customer_id}
+                                onChange={(id) => {
+                                    setForm(f => ({ ...f, customer_id: id }));
+                                    fetchAddresses(id);
+                                }}
+                            />
+                            <OrderAddress
+                                orderId={editingOrder?.id ?? null}
+                                type="colectare"
+                                value={form.adresa_colectare_id}
+                                onChange={id => setForm(f => ({ ...f, adresa_colectare_id: id }))}
+                                dateTime={form.data_colectare}
+                                onDateTimeChange={date => setForm(f => ({ ...f, data_colectare: date }))}
+                                customerId={form.customer_id}
+                                addresses={addresses}
+                                onAddAddress={handleAddAddress}
+                            />
+                            <OrderAddress
+                                orderId={editingOrder?.id ?? null}
+                                type="returnare"
+                                value={form.adresa_returnare_id}
+                                onChange={id => setForm(f => ({ ...f, adresa_returnare_id: id }))}
+                                dateTime={form.data_returnare}
+                                onDateTimeChange={date => setForm(f => ({ ...f, data_returnare: date }))}
+                                customerId={form.customer_id}
+                                addresses={addresses}
+                                onAddAddress={handleAddAddress}
+                            />
+                            <OrderPaymentMethod
+                                orderId={editingOrder?.id ?? null}
+                                value={form.payment_method}
+                                onChange={payment_method => setForm(f => ({ ...f, payment_method }))}
+                            />
                             <OrderDiscount orderId={editingOrder?.id ?? null} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
