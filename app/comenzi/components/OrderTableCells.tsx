@@ -21,6 +21,7 @@ export function OrderMainCell({ order }: { order: Order }) {
 
 export function OrderStatusCell({ status }: { status: string }) {
     const { statuses, loading } = useOrderStatuses();
+    // console.log('OrderStatusCell status:', JSON.stringify(status), 'statuses:', statuses);
     if (loading) return <Badge variant="secondary">...</Badge>;
     const found = statuses.find(s => s.name === status);
     if (!found) return <Badge variant="secondary">Necunoscut</Badge>;

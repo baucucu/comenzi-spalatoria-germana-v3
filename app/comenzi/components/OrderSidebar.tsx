@@ -128,6 +128,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
         if (!open) return;
 
         if (editingOrder) {
+            console.log('OrderSidebar: editingOrder.status =', editingOrder.status);
             setOrderId(editingOrder.id);
             setForm({
                 customer_id: editingOrder.customers?.id || "",

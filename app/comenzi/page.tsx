@@ -33,7 +33,7 @@ export default function ComenziPage() {
         setLoading(true);
         const supabase = createClient();
         let query = supabase
-            .from("orders")
+            .from("orders_with_totals")
             .select(`
                 id,
                 date_created,
@@ -44,9 +44,14 @@ export default function ComenziPage() {
                 customer_id,
                 adresa_colectare_id,
                 adresa_returnare_id,
-                customers:customer_id(id, nume, prenume, telefon, email),
-                adresa_colectare:adresa_colectare_id(id, adresa),
-                adresa_returnare:adresa_returnare_id(id, adresa)
+                nume,
+                prenume,
+                telefon,
+                email,
+                adresa_colectare,
+                adresa_returnare,
+                subtotal_articole,
+                discount_percent
             `)
             .order("date_created", { ascending: false });
 
@@ -87,14 +92,19 @@ export default function ComenziPage() {
         }
 
         const { data } = await query;
-        setOrders(
-            (data || []).map((order: any) => ({
-                ...order,
-                customers: order.customers || null,
-                adresa_colectare: order.adresa_colectare || null,
-                adresa_returnare: order.adresa_returnare || null,
-            }))
-        );
+        const mappedOrders = (data || []).map((order: any) => ({
+            ...order,
+            status: typeof order.status === 'string' ? order.status : (order.status ?? ''),
+            customers: order.nume ? {
+                nume: order.nume,
+                prenume: order.prenume,
+                telefon: order.telefon,
+                email: order.email,
+            } : null,
+            adresa_colectare: order.adresa_colectare ? { adresa: order.adresa_colectare } : null,
+            adresa_returnare: order.adresa_returnare ? { adresa: order.adresa_returnare } : null,
+        }));
+        setOrders(mappedOrders);
         setLoading(false);
     }, [search, statusFilter, dateRange]);
 

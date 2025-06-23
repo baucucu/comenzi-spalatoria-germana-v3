@@ -26,12 +26,12 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
         const fetchTotals = async () => {
             try {
                 const data = await fetchOrderTotals(orderId);
-                console.log('Order totals RPC data:', data);
+                console.log('Order totals view data:', data);
                 if (data) {
-                    setSubtotal(data.total_before_discount || 0);
-                    setDiscountPercent(data.discount_percentage || 0);
-                    setDiscountValue(data.discount_value || 0);
-                    setTotal(data.total_after_discount || 0);
+                    setSubtotal(data.subtotal_articole || 0);
+                    setDiscountPercent(data.discount_percent || 0);
+                    setDiscountValue((data.subtotal_articole || 0) * (data.discount_percent || 0) / 100);
+                    setTotal(data.total_comanda_cu_discount || 0);
                 } else {
                     setSubtotal(0);
                     setDiscountPercent(0);
