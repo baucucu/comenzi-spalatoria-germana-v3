@@ -15,6 +15,7 @@ interface Service {
     price: number;
     category: { name: string } | null;
     service_type: { name: string } | null;
+    unit?: string;
 }
 
 interface OrderItemProps {
@@ -53,7 +54,7 @@ export default function OrderItem({ item, service, saving, onChange, onRemove, o
                             </Badge>
                         )}
                         <span className="text-xs text-muted-foreground font-medium ml-1">
-                            {item.price} RON / buc
+                            {item.price} RON / {service?.unit}
                         </span>
                     </div>
                 </div>

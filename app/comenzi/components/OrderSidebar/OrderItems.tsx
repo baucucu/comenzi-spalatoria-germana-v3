@@ -3,17 +3,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+
 import OrderItem from './OrderItem';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +14,7 @@ interface Service {
     id: number;
     name: string;
     price: number;
+    unit: string;
     category: { name: string } | null;
     service_type: { name: string } | null;
 }
@@ -54,7 +46,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             const supabase = createClient();
             const { data, error } = await supabase
                 .from('services')
-                .select('id, name, price, category:categories(name), service_type:service_types(name)')
+                .select('id, name, price, unit, category:categories(name), service_type:service_types(name)')
                 .order('name');
 
             if (error) {
@@ -100,7 +92,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             const supabase = createClient();
             const { data, error } = await supabase
                 .from('order_services')
-                .select('id, service_id, cantitate, total_articol, service:services(id, name, price)')
+                .select('id, service_id, cantitate, total_articol, service:services(id, name, price, unit)')
                 .eq('order_id', orderId);
 
             if (error) {
