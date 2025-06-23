@@ -11,9 +11,10 @@ import { fetchOrderTotals } from '../../../../utils/supabase/fetchOrderTotals';
 
 interface OrderFooterProps {
     orderId: number | null;
+    refreshKey?: number;
 }
 
-export default function OrderFooter({ orderId }: OrderFooterProps) {
+export default function OrderFooter({ orderId, refreshKey }: OrderFooterProps) {
     const [total, setTotal] = useState(0);
     const [subtotal, setSubtotal] = useState(0);
     const [discountPercent, setDiscountPercent] = useState(0);
@@ -48,7 +49,7 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
         };
 
         fetchTotals();
-    }, [orderId]);
+    }, [orderId, refreshKey]);
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">

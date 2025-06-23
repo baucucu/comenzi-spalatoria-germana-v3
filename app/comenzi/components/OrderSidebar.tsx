@@ -109,6 +109,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
 
     const [saving, setSaving] = useState(false);
     const justCreatedOrder = useRef(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     /* ---------- Effects ---------- */
     // Fetch statuses once
@@ -544,14 +545,14 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                             <OrderDiscount orderId={orderId ?? null} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
-                            <OrderItems orderId={orderId ?? null} />
+                            <OrderItems orderId={orderId ?? null} onItemsChange={() => setRefreshKey(k => k + 1)} />
                         </TabsContent>
                         <TabsContent value="notite" className="m-0 flex flex-col gap-4">
                             <OrderNotes orderId={orderId ?? null} />
                         </TabsContent>
                     </main>
                 </Tabs>
-                <OrderFooter orderId={orderId ?? null} />
+                <OrderFooter orderId={orderId ?? null} refreshKey={refreshKey} />
             </SheetContent>
         </Sheet>
     );

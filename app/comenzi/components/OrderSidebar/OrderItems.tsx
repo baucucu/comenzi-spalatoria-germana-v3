@@ -29,9 +29,10 @@ interface OrderItem {
 
 interface OrderItemsProps {
     orderId: number | null;
+    onItemsChange?: () => void;
 }
 
-export default function OrderItems({ orderId }: OrderItemsProps) {
+export default function OrderItems({ orderId, onItemsChange }: OrderItemsProps) {
     const [services, setServices] = useState<Service[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [saving, setSaving] = useState(false);
@@ -194,7 +195,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
             subtotal: firstService.price,
         };
 
-        setItems(prev => [...prev, newItem]);
+        setItemsAndNotify(prev => [...prev, newItem]);
 
         if (orderId) {
             saveItem(newItem);
@@ -225,16 +226,18 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
         }
         updatedItems[idx] = itemToUpdate;
 
-        setItems(updatedItems);
+        setItemsAndNotify(() => updatedItems);
 
         if (orderId) {
             await saveItem(itemToUpdate);
         }
+
+        if (orderId && onItemsChange) onItemsChange();
     };
 
     const handleRemoveItem = async (idx: number) => {
         const item = items[idx];
-        setItems(items.filter((_, i) => i !== idx));
+        setItemsAndNotify(prev => prev.filter((_, i) => i !== idx));
 
         if (orderId && item.id) {
             setSaving(true);
@@ -250,6 +253,8 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                 toast.error('Eroare la ștergerea articolului: ' + error.message);
                 return;
             }
+
+            if (orderId && onItemsChange) onItemsChange();
         }
     };
 
@@ -294,11 +299,18 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                 toast.error('Eroare la adăugarea articolului: ' + error.message);
             } else if (data) {
                 // Update local state with the new ID
-                setItems(prev => prev.map(i =>
-                    i === item ? { ...i, id: data.id } : i
-                ));
+                setItemsAndNotify(prev => prev.map(i => i === item ? { ...i, id: data.id } : i));
             }
         }
+
+        if (orderId && onItemsChange) onItemsChange();
+    };
+
+    const setItemsAndNotify = (updater: (prev: OrderItem[]) => OrderItem[]) => {
+        setItems(prev => {
+            const next = updater(prev);
+            return next;
+        });
     };
 
     return (
@@ -350,7 +362,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                         price: service.price,
                                         subtotal: service.price,
                                     };
-                                    setItems(prev => [...prev, newItem]);
+                                    setItemsAndNotify(prev => [...prev, newItem]);
                                     if (orderId) {
                                         saveItem(newItem);
                                     }
@@ -368,7 +380,23 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                 item={item}
                                 service={service}
                                 saving={saving}
-                                onChange={(id: number | undefined, field: string, value: any) => { void handleItemChange(id, field, value, service); }}
+                                onChange={(id: number | undefined, field: string, value: any) => {
+                                    if (itemIdx === -1 && field === 'quantity' && value > 0) {
+                                        // Item not in order, add it
+                                        const newItem = {
+                                            service_id: service.id,
+                                            quantity: value,
+                                            price: service.price,
+                                            subtotal: service.price * value,
+                                        };
+                                        setItemsAndNotify(prev => [...prev, newItem]);
+                                        if (orderId) {
+                                            saveItem(newItem);
+                                        }
+                                    } else {
+                                        void handleItemChange(id, field, value, service);
+                                    }
+                                }}
                                 onRemove={itemIdx >= 0 ? () => handleRemoveItem(itemIdx) : () => { }}
                             />
                         );
