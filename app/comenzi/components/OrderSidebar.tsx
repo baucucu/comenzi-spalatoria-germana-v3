@@ -338,7 +338,6 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
             // Update: send all data
             const orderData: any = {
                 customer_id: form.customer_id,
-                total_comanda_cu_discount: parseFloat(form.total) || 0,
                 adresa_colectare_id: form.adresa_colectare_id,
                 adresa_returnare_id: form.adresa_returnare_id,
                 urgent: form.urgent,
