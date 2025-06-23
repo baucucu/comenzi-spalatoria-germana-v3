@@ -209,33 +209,29 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
         }
     };
 
-    const handleItemChange = async (serviceId: number, field: string, value: any, serviceObj?: Service) => {
+    const handleItemChange = async (id: number | undefined, field: string, value: any, serviceObj?: Service) => {
         let updatedItems = [...items];
-        let itemToUpdate: OrderItem;
-        const idx = items.findIndex(i => i.service_id === serviceId);
-        const service = serviceObj || services.find(s => s.id === serviceId);
-        if (!service) return;
-
-        if (idx !== -1) {
-            // Update existing item
-            itemToUpdate = {
-                ...items[idx],
-                [field]: value,
-            };
-            if (field === 'quantity' || field === 'price') {
-                itemToUpdate.subtotal = itemToUpdate.quantity * itemToUpdate.price;
-            }
-            updatedItems[idx] = itemToUpdate;
-        } else {
-            // Insert new item
-            itemToUpdate = {
-                service_id: service.id,
-                quantity: field === 'quantity' ? value : 1,
-                price: service.price,
-                subtotal: (field === 'quantity' ? value : 1) * service.price,
-            };
-            updatedItems = [...items, itemToUpdate];
+        let itemToUpdate: OrderItem | undefined;
+        let idx = -1;
+        if (id !== undefined) {
+            idx = items.findIndex(i => i.id === id);
         }
+        // Fallback for items without id (not yet saved)
+        if (idx === -1 && id === undefined && serviceObj) {
+            idx = items.findIndex(i => i.service_id === serviceObj.id && i.id === undefined);
+        }
+        const service = serviceObj || (idx !== -1 ? services.find(s => s.id === items[idx].service_id) : undefined);
+        if (!service || idx === -1) return;
+
+        // Update existing item
+        itemToUpdate = {
+            ...items[idx],
+            [field]: value,
+        };
+        if (field === 'quantity' || field === 'price') {
+            itemToUpdate.subtotal = itemToUpdate.quantity * itemToUpdate.price;
+        }
+        updatedItems[idx] = itemToUpdate;
 
         setItems(updatedItems);
 
@@ -352,8 +348,21 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                 item={item}
                                 service={service}
                                 saving={saving}
-                                onChange={(field, value) => handleItemChange(item.service_id, field, value, service)}
+                                onChange={(id: number | undefined, field: string, value: any) => { void handleItemChange(id, field, value, service); }}
                                 onRemove={() => handleRemoveItem(idx)}
+                                onAddAnother={() => {
+                                    if (!service) return;
+                                    const newItem = {
+                                        service_id: service.id,
+                                        quantity: 1,
+                                        price: service.price,
+                                        subtotal: service.price,
+                                    };
+                                    setItems(prev => [...prev, newItem]);
+                                    if (orderId) {
+                                        saveItem(newItem);
+                                    }
+                                }}
                             />
                         );
                     })
@@ -367,7 +376,7 @@ export default function OrderItems({ orderId }: OrderItemsProps) {
                                 item={item}
                                 service={service}
                                 saving={saving}
-                                onChange={(field, value) => handleItemChange(service.id, field, value, service)}
+                                onChange={(id: number | undefined, field: string, value: any) => { void handleItemChange(id, field, value, service); }}
                                 onRemove={itemIdx >= 0 ? () => handleRemoveItem(itemIdx) : () => { }}
                             />
                         );

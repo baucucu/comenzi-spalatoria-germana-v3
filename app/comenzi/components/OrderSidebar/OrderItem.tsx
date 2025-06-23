@@ -27,11 +27,12 @@ interface OrderItemProps {
     };
     service: Service | undefined;
     saving: boolean;
-    onChange: (field: string, value: any) => void;
+    onChange: (id: number | undefined, field: string, value: any) => void;
     onRemove: () => void;
+    onAddAnother?: () => void;
 }
 
-export default function OrderItem({ item, service, saving, onChange, onRemove }: OrderItemProps) {
+export default function OrderItem({ item, service, saving, onChange, onRemove, onAddAnother }: OrderItemProps) {
     return (
         <Card className="w-full p-2 sm:p-3 flex flex-col justify-between min-h-0">
             <div className="flex items-center gap-3 w-full">
@@ -57,6 +58,16 @@ export default function OrderItem({ item, service, saving, onChange, onRemove }:
                     </div>
                 </div>
                 <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={onAddAnother}
+                    disabled={saving}
+                    aria-label="Adaugă încă unul"
+                    className="ml-1 w-9 h-9"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                </Button>
+                <Button
                     variant="destructive"
                     size="icon"
                     onClick={onRemove}
@@ -72,7 +83,7 @@ export default function OrderItem({ item, service, saving, onChange, onRemove }:
                     type="button"
                     size="icon"
                     variant="outline"
-                    onClick={() => onChange('quantity', Math.max(1, item.quantity - 1))}
+                    onClick={() => onChange(item.id, 'quantity', Math.max(1, item.quantity - 1))}
                     disabled={saving || item.quantity <= 1}
                     className="rounded-md w-8 h-8 text-base border"
                 >
@@ -85,7 +96,7 @@ export default function OrderItem({ item, service, saving, onChange, onRemove }:
                     type="button"
                     size="icon"
                     variant="outline"
-                    onClick={() => onChange('quantity', item.quantity + 1)}
+                    onClick={() => onChange(item.id, 'quantity', item.quantity + 1)}
                     disabled={saving}
                     className="rounded-md w-8 h-8 text-base border"
                 >
