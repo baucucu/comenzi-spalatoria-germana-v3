@@ -542,7 +542,7 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                                 value={form.payment_method}
                                 onChange={payment_method => setForm(f => ({ ...f, payment_method }))}
                             />
-                            <OrderDiscount orderId={orderId ?? null} />
+                            <OrderDiscount orderId={orderId ?? null} onDiscountChange={() => setRefreshKey(k => k + 1)} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
                             <OrderItems orderId={orderId ?? null} onItemsChange={() => setRefreshKey(k => k + 1)} />

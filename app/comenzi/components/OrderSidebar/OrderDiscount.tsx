@@ -21,9 +21,10 @@ interface Discount {
 
 interface OrderDiscountProps {
     orderId: number | null;
+    onDiscountChange?: () => void;
 }
 
-export default function OrderDiscount({ orderId }: OrderDiscountProps) {
+export default function OrderDiscount({ orderId, onDiscountChange }: OrderDiscountProps) {
     const [discounts, setDiscounts] = useState<Discount[]>([]);
     const [selectedDiscount, setSelectedDiscount] = useState<string>("");
     const [saving, setSaving] = useState(false);
@@ -103,6 +104,7 @@ export default function OrderDiscount({ orderId }: OrderDiscountProps) {
         }
 
         setSelectedDiscount(value);
+        if (onDiscountChange) onDiscountChange();
     };
 
     return (
