@@ -2,7 +2,7 @@
 import { PageContentWrapper } from "@/components/ui/page-content-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
@@ -108,25 +108,91 @@ export default function ComenziPage() {
         setLoading(false);
     }, [search, statusFilter, dateRange]);
 
+    // Helper: check if an order matches current filters
+    const orderMatchesFilters = useCallback((order: any) => {
+        // Status filter
+        if (statusFilter && order.status !== statusFilter) return false;
+        // Date filter
+        if (dateRange?.from || dateRange?.to) {
+            const orderDate = new Date(order.date_created);
+            if (dateRange?.from && orderDate < new Date(dateRange.from.setHours(0, 0, 0, 0))) return false;
+            if (dateRange?.to && orderDate > new Date(dateRange.to.setHours(23, 59, 59, 999))) return false;
+        }
+        // Search filter
+        if (search.trim()) {
+            const cleanedSearch = search.trim().replace(/[&|!():*]/g, "");
+            const terms = cleanedSearch.split(/\s+/).filter(Boolean);
+            const text = [order.nume, order.prenume, order.telefon, order.email, order.id].join(" ").toLowerCase();
+            if (!terms.every(term => text.includes(term.toLowerCase()))) return false;
+        }
+        return true;
+    }, [search, statusFilter, dateRange]);
+
     useEffect(() => {
         fetchOrders();
-
         const supabase = createClient();
         const channel = supabase
             .channel('orders')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'orders' },
-                () => {
-                    fetchOrders();
+                (payload) => {
+                    setOrders(prevOrders => {
+                        const { eventType, new: newOrder, old: oldOrder } = payload;
+                        if (eventType === 'INSERT') {
+                            if (orderMatchesFilters(newOrder)) {
+                                // Add if not already present
+                                if (!prevOrders.some(o => o.id === newOrder.id)) {
+                                    const mappedOrder = {
+                                        ...newOrder,
+                                        status: typeof newOrder.status === 'string' ? newOrder.status : (newOrder.status ?? ''),
+                                        customers: newOrder.nume ? {
+                                            nume: newOrder.nume,
+                                            prenume: newOrder.prenume,
+                                            telefon: newOrder.telefon,
+                                            email: newOrder.email,
+                                        } : null,
+                                        adresa_colectare: newOrder.adresa_colectare ? { adresa: newOrder.adresa_colectare } : null,
+                                        adresa_returnare: newOrder.adresa_returnare ? { adresa: newOrder.adresa_returnare } : null,
+                                    } as Order;
+                                    return [mappedOrder, ...prevOrders];
+                                }
+                            }
+                            return prevOrders;
+                        }
+                        if (eventType === 'UPDATE') {
+                            // Remove if no longer matches, update if matches
+                            if (!orderMatchesFilters(newOrder)) {
+                                return prevOrders.filter(o => o.id !== newOrder.id);
+                            }
+                            const mappedOrder = {
+                                ...newOrder,
+                                status: typeof newOrder.status === 'string' ? newOrder.status : (newOrder.status ?? ''),
+                                customers: newOrder.nume ? {
+                                    nume: newOrder.nume,
+                                    prenume: newOrder.prenume,
+                                    telefon: newOrder.telefon,
+                                    email: newOrder.email,
+                                } : null,
+                                adresa_colectare: newOrder.adresa_colectare ? { adresa: newOrder.adresa_colectare } : null,
+                                adresa_returnare: newOrder.adresa_returnare ? { adresa: newOrder.adresa_returnare } : null,
+                            } as Order;
+                            return prevOrders.map(o =>
+                                o.id === newOrder.id ? mappedOrder : o
+                            );
+                        }
+                        if (eventType === 'DELETE') {
+                            return prevOrders.filter(o => o.id !== oldOrder.id);
+                        }
+                        return prevOrders;
+                    });
                 }
             )
             .subscribe();
-
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [fetchOrders]);
+    }, [fetchOrders, orderMatchesFilters]);
 
     const handleAddOrder = () => {
         setEditingOrder(null);
@@ -140,7 +206,7 @@ export default function ComenziPage() {
 
     const handleSaved = () => {
         setSidebarOpen(false);
-        fetchOrders();
+        // No fetchOrders here; real-time will update the list
     };
 
     // Helper for label
@@ -219,6 +285,7 @@ export default function ComenziPage() {
                     open={sidebarOpen}
                     onOpenChange={setSidebarOpen}
                     orderId={editingOrder?.id ?? null}
+                    onSaved={handleSaved}
                 />
             </div>
         </PageContentWrapper>
