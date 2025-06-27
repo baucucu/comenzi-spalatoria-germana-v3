@@ -3,31 +3,27 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { SheetFooter } from '@/components/ui/sheet';
 import { fetchOrderTotals } from '../../../../utils/supabase/fetchOrderTotals';
 
 interface OrderFooterProps {
     orderId: number | null;
-    refreshKey?: number;
 }
 
-export default function OrderFooter({ orderId, refreshKey }: OrderFooterProps) {
+export default function OrderFooter({ orderId }: OrderFooterProps) {
     const [total, setTotal] = useState(0);
     const [subtotal, setSubtotal] = useState(0);
     const [discountPercent, setDiscountPercent] = useState(0);
     const [discountValue, setDiscountValue] = useState(0);
-    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const supabase = createClient();
 
     useEffect(() => {
         if (!orderId) return;
-
+        setLoading(true);
         const fetchTotals = async () => {
             try {
                 const data = await fetchOrderTotals(orderId);
-                console.log('Order totals view data:', data);
                 if (data) {
                     setSubtotal(data.subtotal_articole || 0);
                     setDiscountPercent(data.discount_percent || 0);
@@ -45,11 +41,21 @@ export default function OrderFooter({ orderId, refreshKey }: OrderFooterProps) {
                 setDiscountPercent(0);
                 setDiscountValue(0);
                 setTotal(0);
+            } finally {
+                setLoading(false);
             }
         };
-
         fetchTotals();
-    }, [orderId, refreshKey]);
+        // Real-time subscription
+        const channel = supabase.channel(`order-footer-${orderId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, () => {
+                fetchTotals();
+            })
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [orderId]);
 
     return (
         <SheetFooter className="border-t p-4 space-y-4">
@@ -68,6 +74,9 @@ export default function OrderFooter({ orderId, refreshKey }: OrderFooterProps) {
                     <span>Total:</span>
                     <span>{total.toFixed(2)} RON</span>
                 </div>
+                {loading && (
+                    <div className="text-xs text-muted-foreground">Se încarcă...</div>
+                )}
             </div>
         </SheetFooter>
     );
