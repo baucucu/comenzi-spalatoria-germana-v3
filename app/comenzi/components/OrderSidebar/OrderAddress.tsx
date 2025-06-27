@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { DateTimePicker } from '@/components/datetimepicker';
 
 interface Address {
     id: number;
@@ -149,22 +150,20 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
         if (!orderId || newId === undefined) return;
         setSaving(true);
         const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
+        // When selecting a new address, clear date/time
         const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
-        const dateToSave = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
-            ? new Date(dateTime)
-            : new Date();
         const { error } = await supabase
             .from('orders')
             .update({
                 [addressField]: newId,
-                [dateTimeField]: dateToSave.toISOString(),
+                [dateTimeField]: null,
             })
             .eq('id', orderId);
         setSaving(false);
         if (error) {
             toast.error('Eroare la salvarea adresei: ' + error.message);
         } else {
-            setDateTime(dateToSave.toISOString());
+            setDateTime("");
             setIsActive(true);
         }
     };
@@ -237,27 +236,13 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
         }
     };
 
-    const handleDateChange = (selectedDate: Date | undefined) => {
-        if (!selectedDate) {
+    // Date/time pickers: autosave to DB when user picks a value
+    const handleDateTimeChange = (dt: Date | undefined) => {
+        if (!dt || dt.toString() === 'Invalid Date') {
             updateDateTimeInDb(null);
-            return;
+        } else {
+            updateDateTimeInDb(dt);
         }
-        const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
-            ? new Date(dateTime)
-            : new Date();
-        current.setFullYear(selectedDate.getFullYear());
-        current.setMonth(selectedDate.getMonth());
-        current.setDate(selectedDate.getDate());
-        updateDateTimeInDb(current);
-    };
-
-    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const [hours, minutes] = e.target.value.split(':').map(Number);
-        const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
-            ? new Date(dateTime)
-            : new Date();
-        current.setHours(hours, minutes);
-        updateDateTimeInDb(current);
     };
 
     const title = type === 'colectare' ? 'Adresă Colectare' : 'Adresă Returnare';
@@ -336,37 +321,13 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
                         </div>
                     )}
                     <div className="flex gap-2">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={'outline'}
-                                    className="flex-1"
-                                    disabled={saving || loading}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {currentDateTime ? (
-                                        format(currentDateTime, 'PPP', { locale: ro })
-                                    ) : (
-                                        <span>Alege data</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={currentDateTime ?? undefined}
-                                    onSelect={handleDateChange}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        <Input
-                            type="time"
-                            className="w-32"
-                            value={currentDateTime ? format(currentDateTime, 'HH:mm') : ''}
-                            onChange={handleTimeChange}
-                            disabled={saving || loading}
-                        />
+                        <div className="w-full">
+                            <DateTimePicker
+                                value={currentDateTime ?? undefined}
+                                onChange={handleDateTimeChange}
+                                disabled={saving || loading}
+                            />
+                        </div>
                     </div>
                 </>
             )}
