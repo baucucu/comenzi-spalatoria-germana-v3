@@ -70,7 +70,7 @@ export function useCustomer(
                     .join(" & ");
 
                 if (tsQuery) {
-                    query = query.textSearch("fts", tsQuery, {
+                    query = query.textSearch("search_vector", tsQuery, {
                         config: "romanian",
                         type: "tsquery",
                     } as any);
