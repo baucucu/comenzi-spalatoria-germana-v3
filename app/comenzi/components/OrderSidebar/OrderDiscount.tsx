@@ -21,65 +21,71 @@ interface Discount {
 
 interface OrderDiscountProps {
     orderId: number | null;
-    onDiscountChange?: () => void;
 }
 
-export default function OrderDiscount({ orderId, onDiscountChange }: OrderDiscountProps) {
+export default function OrderDiscount({ orderId }: OrderDiscountProps) {
     const [discounts, setDiscounts] = useState<Discount[]>([]);
     const [selectedDiscount, setSelectedDiscount] = useState<string>("");
+    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const supabase = createClient();
 
+    // Fetch discounts list
     useEffect(() => {
         const fetchDiscounts = async () => {
-            const supabase = createClient();
             const { data, error } = await supabase
                 .from('discounts')
                 .select('id, name, value')
                 .order('value');
-
             if (error) {
                 toast.error('Eroare la încărcarea discounturilor: ' + error.message);
                 return;
             }
-
             if (data) {
                 setDiscounts(data);
-                if (data.length > 0) {
-                    setSelectedDiscount(data[0].id.toString());
-                }
             }
         };
-
         fetchDiscounts();
     }, []);
 
+    // Fetch order discount when orderId or discounts change
     useEffect(() => {
-        if (!orderId || discounts.length === 0) return;
-
+        if (!orderId || discounts.length === 0) {
+            setSelectedDiscount("");
+            return;
+        }
+        setLoading(true);
         const fetchOrderDiscount = async () => {
-            const supabase = createClient();
             const { data, error } = await supabase
                 .from('orders')
                 .select('discount')
                 .eq('id', orderId)
                 .single();
-
+            setLoading(false);
             if (error) {
                 toast.error('Eroare la încărcarea discountului: ' + error.message);
+                setSelectedDiscount("");
                 return;
             }
-
             if (data) {
                 const discount = discounts.find(d => d.id === data.discount);
                 if (discount) {
                     setSelectedDiscount(discount.id.toString());
-                } else if (discounts.length > 0) {
-                    setSelectedDiscount(discounts[0].id.toString());
+                } else {
+                    setSelectedDiscount("");
                 }
             }
         };
-
         fetchOrderDiscount();
+        // Real-time subscription
+        const channel = supabase.channel(`order-discount-${orderId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, () => {
+                fetchOrderDiscount();
+            })
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [orderId, discounts]);
 
     const handleDiscountChange = async (value: string) => {
@@ -87,24 +93,18 @@ export default function OrderDiscount({ orderId, onDiscountChange }: OrderDiscou
             setSelectedDiscount(value);
             return;
         }
-
         setSaving(true);
-        const supabase = createClient();
         const discountId = value ? parseInt(value) : null;
         const { error } = await supabase
             .from('orders')
             .update({ discount: discountId })
             .eq('id', orderId);
-
         setSaving(false);
-
         if (error) {
             toast.error('Eroare la salvarea discountului: ' + error.message);
             return;
         }
-
         setSelectedDiscount(value);
-        if (onDiscountChange) onDiscountChange();
     };
 
     return (
@@ -113,7 +113,7 @@ export default function OrderDiscount({ orderId, onDiscountChange }: OrderDiscou
             <Select
                 value={selectedDiscount}
                 onValueChange={handleDiscountChange}
-                disabled={saving}
+                disabled={saving || loading}
             >
                 <SelectTrigger>
                     <SelectValue placeholder="Selectează discount" />
@@ -126,7 +126,7 @@ export default function OrderDiscount({ orderId, onDiscountChange }: OrderDiscou
                     ))}
                 </SelectContent>
             </Select>
-            {saving && <div className="text-xs text-muted-foreground">Se salvează...</div>}
+            {(loading || saving) && <div className="text-xs text-muted-foreground">{loading ? 'Se încarcă...' : 'Se salvează...'}</div>}
         </Card>
     );
 } 

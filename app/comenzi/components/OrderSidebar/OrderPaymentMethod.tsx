@@ -15,43 +15,72 @@ import { Card } from '@/components/ui/card';
 
 interface OrderPaymentMethodProps {
     orderId: number | null;
-    value: string;
-    onChange: (value: string) => void;
 }
 
-export default function OrderPaymentMethod({ orderId, value, onChange }: OrderPaymentMethodProps) {
+export default function OrderPaymentMethod({ orderId }: OrderPaymentMethodProps) {
+    const [paymentMethod, setPaymentMethod] = useState<string>('');
+    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const supabase = createClient();
 
-    const handlePaymentMethodChange = async (newValue: string) => {
-        onChange(newValue); // Immediately update parent state
-
+    // Fetch payment method when orderId changes
+    useEffect(() => {
         if (!orderId) {
+            setPaymentMethod('');
             return;
         }
+        setLoading(true);
+        const fetchPaymentMethod = async () => {
+            const { data, error } = await supabase
+                .from('orders')
+                .select('payment_method')
+                .eq('id', orderId)
+                .single();
+            setLoading(false);
+            if (error) {
+                toast.error('Eroare la încărcarea metodei de plată: ' + error.message);
+                setPaymentMethod('');
+                return;
+            }
+            setPaymentMethod(data?.payment_method || '');
+        };
+        fetchPaymentMethod();
+        // Real-time subscription
+        const channel = supabase.channel(`order-payment-method-${orderId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, () => {
+                fetchPaymentMethod();
+            })
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [orderId]);
 
+    const handlePaymentMethodChange = async (newValue: string) => {
+        if (!orderId) {
+            setPaymentMethod(newValue);
+            return;
+        }
         setSaving(true);
-        const supabase = createClient();
         const { error } = await supabase
             .from('orders')
             .update({ payment_method: newValue })
             .eq('id', orderId);
-
         setSaving(false);
-
         if (error) {
             toast.error('Eroare la salvarea metodei de plată: ' + error.message);
-            onChange(value); // Revert on error
             return;
         }
+        setPaymentMethod(newValue);
     };
 
     return (
         <Card className="p-4 flex flex-col gap-2">
             <Label>Metodă de plată</Label>
             <Select
-                value={value}
+                value={paymentMethod}
                 onValueChange={handlePaymentMethodChange}
-                disabled={saving}
+                disabled={saving || loading}
             >
                 <SelectTrigger>
                     <SelectValue placeholder="Selectează metoda de plată" />
@@ -63,7 +92,7 @@ export default function OrderPaymentMethod({ orderId, value, onChange }: OrderPa
                     <SelectItem value="Transfer bancar">Ordin de Plată</SelectItem>
                 </SelectContent>
             </Select>
-            {saving && <div className="text-xs text-muted-foreground">Se salvează...</div>}
+            {(loading || saving) && <div className="text-xs text-muted-foreground">{loading ? 'Se încarcă...' : 'Se salvează...'}</div>}
         </Card>
     );
 } 
