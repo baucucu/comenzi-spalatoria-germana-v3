@@ -9,57 +9,78 @@ import { toast } from "sonner";
 
 interface OrderMarcuteProps {
     orderId: number | null;
-    value: string;
-    onChange: (value: string) => void;
 }
 
-export default function OrderMarcute({ orderId, value, onChange }: OrderMarcuteProps) {
-    const [initialMarcute, setInitialMarcute] = useState(value);
-
+export default function OrderMarcute({ orderId }: OrderMarcuteProps) {
+    const [marcute, setMarcute] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const supabase = createClient();
 
+    // Fetch marcute when orderId changes
     useEffect(() => {
-        setInitialMarcute(value);
-    }, [value]);
+        if (!orderId) {
+            setMarcute("");
+            return;
+        }
+        setLoading(true);
+        const fetchMarcute = async () => {
+            const { data, error } = await supabase
+                .from("orders")
+                .select("marcute")
+                .eq("id", orderId)
+                .single();
+            setLoading(false);
+            if (error) {
+                toast.error("Eroare la încărcarea marcutelor: " + error.message);
+                setMarcute("");
+                return;
+            }
+            setMarcute(data?.marcute || "");
+        };
+        fetchMarcute();
+    }, [orderId]);
 
-    const updateMarcute = useCallback(async (newMarcute: string) => {
+    // Save marcute to Supabase (debounced)
+    useEffect(() => {
         if (!orderId) return;
+        if (loading) return;
+        const handler = setTimeout(() => {
+            saveMarcute(marcute);
+        }, 800);
+        return () => clearTimeout(handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [marcute, orderId]);
 
+    const saveMarcute = useCallback(async (newMarcute: string) => {
+        if (!orderId) return;
+        setSaving(true);
         const { error } = await supabase
-            .from('orders')
+            .from("orders")
             .update({ marcute: newMarcute })
-            .eq('id', orderId);
-
+            .eq("id", orderId);
+        setSaving(false);
         if (error) {
-            toast.error("Eroare la salvarea marcutelor.");
-            console.error("Error updating marcute:", error);
-        } else {
-            setInitialMarcute(newMarcute);
+            toast.error("Eroare la salvarea marcutelor: " + error.message);
         }
     }, [orderId, supabase]);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            if (value !== initialMarcute) {
-                updateMarcute(value);
-            }
-        }, 800);
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, initialMarcute, updateMarcute]);
 
     return (
         <Card className="p-4 flex flex-col gap-2">
             <Label htmlFor="marcute">Marcute</Label>
             <Textarea
                 id="marcute"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
+                value={marcute}
+                onChange={e => setMarcute(e.target.value)}
                 placeholder="Adaugă marcute..."
                 className="min-h-[100px]"
+                disabled={loading || saving}
             />
+            {(loading || saving) && (
+                <div className="text-xs text-muted-foreground">
+                    {loading ? "Se încarcă..." : "Se salvează..."}
+                </div>
+            )}
         </Card>
     );
 } 
