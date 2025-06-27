@@ -128,46 +128,60 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
     useEffect(() => {
         if (!open) return;
 
-        if (editingOrder) {
-            console.log('OrderSidebar: editingOrder.status =', editingOrder.status);
-            setOrderId(editingOrder.id);
-            setForm({
-                customer_id: editingOrder.customers?.id || "",
-                status: editingOrder.status || "",
-                total: editingOrder.total_comanda_cu_discount.toString(),
-                date: editingOrder.date_created ? editingOrder.date_created.slice(0, 10) : "",
-                adresa_colectare_id: editingOrder.adresa_colectare_id,
-                adresa_returnare_id: editingOrder.adresa_returnare_id,
-                urgent: editingOrder.urgent || false,
-                payment_method: editingOrder.payment_method || '',
-                discount: '',
-                marcute: editingOrder.marcute || '',
-                data_comanda: editingOrder.data_comanda || '',
-                data_colectare: editingOrder.data_colectare || null,
-                data_returnare: editingOrder.data_returnare || null,
-            });
-            fetchOrderItems(editingOrder.id);
-            fetchStatusHistory(editingOrder);
-        } else {
-            setOrderId(null);
-            setForm({
-                customer_id: "",
-                status: 'noua',
-                total: "0",
-                date: new Date().toISOString().slice(0, 10),
-                adresa_colectare_id: undefined,
-                adresa_returnare_id: undefined,
-                urgent: false,
-                payment_method: 'Neachitat',
-                discount: '',
-                marcute: '',
-                data_comanda: new Date().toISOString(),
-                data_colectare: null,
-                data_returnare: null
-            });
-            setItems([]);
-            setStatusHistory([]);
-        }
+        // Always fetch the latest order from Supabase if editingOrder is set
+        const fetchOrder = async () => {
+            if (editingOrder?.id) {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', editingOrder.id)
+                    .single();
+                if (data) {
+                    setOrderId(data.id);
+                    setForm({
+                        customer_id: data.customer_id || "",
+                        status: data.status || "",
+                        total: data.total_comanda_cu_discount?.toString() || "0",
+                        date: data.date_created ? data.date_created.slice(0, 10) : "",
+                        adresa_colectare_id: data.adresa_colectare_id,
+                        adresa_returnare_id: data.adresa_returnare_id,
+                        urgent: data.urgent || false,
+                        payment_method: data.payment_method || '',
+                        discount: '',
+                        marcute: data.marcute || '',
+                        data_comanda: data.data_comanda || '',
+                        data_colectare: data.data_colectare || null,
+                        data_returnare: data.data_returnare || null,
+                    });
+                    fetchOrderItems(data.id);
+                    fetchStatusHistory(data);
+                } else if (error) {
+                    toast.error('Eroare la încărcarea comenzii: ' + error.message);
+                }
+            } else {
+                setOrderId(null);
+                setForm({
+                    customer_id: "",
+                    status: 'noua',
+                    total: "0",
+                    date: new Date().toISOString().slice(0, 10),
+                    adresa_colectare_id: undefined,
+                    adresa_returnare_id: undefined,
+                    urgent: false,
+                    payment_method: 'Neachitat',
+                    discount: '',
+                    marcute: '',
+                    data_comanda: new Date().toISOString(),
+                    data_colectare: null,
+                    data_returnare: null
+                });
+                setItems([]);
+                setStatusHistory([]);
+            }
+        };
+        fetchOrder();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingOrder, open, statuses]);
 
     // Fetch customers when the search text changes
@@ -343,24 +357,31 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 adresa_returnare_id: form.adresa_returnare_id,
                 urgent: form.urgent,
                 payment_method: form.payment_method,
-                discount: parseFloat(form.discount || '0'),
+                discount: form.discount ? parseInt(form.discount, 10) : 5,
                 marcute: form.marcute,
                 data_comanda: form.data_comanda,
                 data_colectare: form.data_colectare || null,
                 data_returnare: form.data_returnare || null,
             };
-
             // Only include status if it has been changed from the initial 'noua'
             if (form.status !== 'noua') {
                 orderData.status = form.status;
             }
-
+            // Remove undefined fields
+            Object.keys(orderData).forEach(
+                key => orderData[key] === undefined && delete orderData[key]
+            );
+            console.log('Updating order:', orderId, orderData);
             orderRes = await supabase
                 .from('orders')
                 .update(orderData)
                 .eq('id', orderId)
                 .select('id')
                 .single();
+            if (orderRes.error) {
+                console.error('Supabase update error:', orderRes.error);
+                if (!silent) toast.error('Eroare la salvare comandă: ' + orderRes.error.message);
+            }
             order_id = orderId;
         } else {
             // Insert: send minimal data
@@ -370,6 +391,8 @@ export default function OrderSidebar({ open, onOpenChange, editingOrder, onSaved
                 // Defaults from DB schema
                 subtotal_articole: 0,
                 total_comanda_cu_discount: 0,
+                marcute: form.marcute || '',
+                discount: form.discount ? parseInt(form.discount, 10) : 5,
             };
             orderRes = await supabase
                 .from('orders')
