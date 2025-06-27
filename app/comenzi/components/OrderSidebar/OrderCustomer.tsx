@@ -118,7 +118,13 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
         setLoading(true);
         const { error } = await supabase
             .from("orders")
-            .update({ customer_id: customerId })
+            .update({
+                customer_id: customerId,
+                adresa_colectare_id: null,
+                adresa_returnare_id: null,
+                data_colectare: null,
+                data_returnare: null,
+            })
             .eq("id", orderId);
         setLoading(false);
         if (error) {
