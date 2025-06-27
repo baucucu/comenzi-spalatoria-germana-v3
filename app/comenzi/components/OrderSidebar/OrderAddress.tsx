@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,59 +34,79 @@ interface OrderAddressProps {
 }
 
 export default function OrderAddress({ orderId, type }: OrderAddressProps) {
-    const [addressId, setAddressId] = useState<number | undefined>(undefined);
-    const [dateTime, setDateTime] = useState<string>("");
-    const [customerId, setCustomerId] = useState<string | null>(null);
-    const [addresses, setAddresses] = useState<Address[]>([]);
     const [addOpen, setAddOpen] = useState(false);
     const [newAddress, setNewAddress] = useState({ adresa: '', detalii: '' });
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [isActive, setIsActive] = useState(false);
+    const [loading, setLoading] = useState(false);
     const supabase = createClient();
 
-    // Fetch order details (address, date, customerId)
+    // Real-time state
+    const [order, setOrder] = useState<any>(null);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [customerId, setCustomerId] = useState<string | null>(null);
+    const [addressId, setAddressId] = useState<number | undefined>(undefined);
+    const [dateTime, setDateTime] = useState<string>("");
+    const [isActive, setIsActive] = useState(false);
+    const lastAddedAddressId = useRef<number | null>(null);
+
+    // Subscribe to order changes
     useEffect(() => {
         if (!orderId) {
+            setOrder(null);
+            setCustomerId(null);
             setAddressId(undefined);
             setDateTime("");
-            setCustomerId(null);
             setIsActive(false);
             return;
         }
         setLoading(true);
+        let ignore = false;
         const fetchOrder = async () => {
             const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
             const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
             const { data, error } = await supabase
                 .from('orders')
-                .select(`${addressField}, ${dateTimeField}, customer_id`)
+                .select(`id, customer_id, ${addressField}, ${dateTimeField}`)
                 .eq('id', orderId)
                 .single();
             setLoading(false);
             if (error) {
                 toast.error('Eroare la încărcarea adresei: ' + error.message);
+                setOrder(null);
+                setCustomerId(null);
                 setAddressId(undefined);
                 setDateTime("");
-                setCustomerId(null);
                 setIsActive(false);
                 return;
             }
-            const d = data as Record<string, any>;
-            setAddressId(d?.[addressField] ?? undefined);
-            setDateTime(d?.[dateTimeField] ?? "");
-            setCustomerId(d?.customer_id ?? null);
-            setIsActive(!!d?.[addressField]);
+            if (!ignore) {
+                setOrder(data);
+                setCustomerId((data as Record<string, any>).customer_id ?? null);
+                setAddressId((data as Record<string, any>)[addressField] ?? undefined);
+                setDateTime((data as Record<string, any>)[dateTimeField] ?? "");
+                setIsActive(!!(data as Record<string, any>)[addressField]);
+            }
         };
         fetchOrder();
+        // Real-time subscription
+        const channel = supabase.channel(`order-address-${orderId}-${type}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+                fetchOrder();
+            })
+            .subscribe();
+        return () => {
+            ignore = true;
+            supabase.removeChannel(channel);
+        };
     }, [orderId, type]);
 
-    // Fetch addresses for customer
+    // Subscribe to addresses for the current customer
     useEffect(() => {
         if (!customerId) {
             setAddresses([]);
             return;
         }
+        let ignore = false;
         const fetchAddresses = async () => {
             const { data, error } = await supabase
                 .from('addresses')
@@ -98,10 +118,29 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
                 setAddresses([]);
                 return;
             }
-            setAddresses(data || []);
+            if (!ignore) {
+                setAddresses(data || []);
+            }
         };
         fetchAddresses();
+        // Real-time subscription
+        const channel = supabase.channel(`order-addresses-${customerId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'addresses', filter: `customer_id=eq.${customerId}` }, (payload) => {
+                fetchAddresses();
+            })
+            .subscribe();
+        return () => {
+            ignore = true;
+            supabase.removeChannel(channel);
+        };
     }, [customerId]);
+
+    // When customer changes, reset address selection
+    useEffect(() => {
+        setAddressId(undefined);
+        setDateTime("");
+        setIsActive(false);
+    }, [customerId, type]);
 
     // Save selected address to order
     const handleAddressChange = async (addressIdStr: string) => {
@@ -148,13 +187,20 @@ export default function OrderAddress({ orderId, type }: OrderAddressProps) {
             return;
         }
         if (data) {
-            setAddresses(prev => [data, ...prev]);
-            await handleAddressChange(data.id.toString());
+            lastAddedAddressId.current = data.id;
             setAddOpen(false);
             setNewAddress({ adresa: '', detalii: '' });
             toast.success('Adresă adăugată!');
         }
     };
+
+    // When a new address is added, select it automatically
+    useEffect(() => {
+        if (lastAddedAddressId.current && addresses.some(a => a.id === lastAddedAddressId.current)) {
+            handleAddressChange(lastAddedAddressId.current.toString());
+            lastAddedAddressId.current = null;
+        }
+    }, [addresses]);
 
     const handleCancelAddress = async () => {
         setAddressId(undefined);
