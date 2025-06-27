@@ -17,10 +17,11 @@ interface OrderSidebarProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     orderId: number | null;
+    onSaved?: () => void;
 }
 
 
-export default function OrderSidebar({ open, onOpenChange, orderId }: OrderSidebarProps) {
+export default function OrderSidebar({ open, onOpenChange, orderId, onSaved }: OrderSidebarProps) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange} >
             <SheetContent className="max-w-lg w-full h-full flex flex-col p-0 gap-0">
@@ -60,7 +61,7 @@ export default function OrderSidebar({ open, onOpenChange, orderId }: OrderSideb
                             <OrderDiscount orderId={orderId} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
-                            <OrderItems orderId={orderId} />
+                            <OrderItems orderId={orderId} onItemsChange={onSaved} />
                         </TabsContent>
                         <TabsContent value="notite" className="m-0 flex flex-col gap-4">
                             <OrderNotes orderId={orderId} />
