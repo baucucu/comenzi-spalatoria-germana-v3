@@ -31,52 +31,89 @@ interface Address {
 interface OrderAddressProps {
     orderId: number | null;
     type: 'colectare' | 'returnare';
-    value: number | undefined;
-    onChange: (id: number | undefined) => void;
-    dateTime: string;
-    onDateTimeChange: (date: string) => void;
-    customerId: string | null;
-    addresses: Address[];
-    onAddAddress: (address: { adresa: string, detalii: string }) => Promise<Address | null>;
 }
 
-export default function OrderAddress({
-    orderId,
-    type,
-    value,
-    onChange,
-    dateTime,
-    onDateTimeChange,
-    customerId,
-    addresses,
-    onAddAddress,
-}: OrderAddressProps) {
+export default function OrderAddress({ orderId, type }: OrderAddressProps) {
+    const [addressId, setAddressId] = useState<number | undefined>(undefined);
+    const [dateTime, setDateTime] = useState<string>("");
+    const [customerId, setCustomerId] = useState<string | null>(null);
+    const [addresses, setAddresses] = useState<Address[]>([]);
     const [addOpen, setAddOpen] = useState(false);
     const [newAddress, setNewAddress] = useState({ adresa: '', detalii: '' });
+    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [isActive, setIsActive] = useState(false);
+    const supabase = createClient();
 
+    // Fetch order details (address, date, customerId)
     useEffect(() => {
-        setIsActive(!!value);
-    }, [value]);
+        if (!orderId) {
+            setAddressId(undefined);
+            setDateTime("");
+            setCustomerId(null);
+            setIsActive(false);
+            return;
+        }
+        setLoading(true);
+        const fetchOrder = async () => {
+            const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
+            const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`${addressField}, ${dateTimeField}, customer_id`)
+                .eq('id', orderId)
+                .single();
+            setLoading(false);
+            if (error) {
+                toast.error('Eroare la încărcarea adresei: ' + error.message);
+                setAddressId(undefined);
+                setDateTime("");
+                setCustomerId(null);
+                setIsActive(false);
+                return;
+            }
+            const d = data as Record<string, any>;
+            setAddressId(d?.[addressField] ?? undefined);
+            setDateTime(d?.[dateTimeField] ?? "");
+            setCustomerId(d?.customer_id ?? null);
+            setIsActive(!!d?.[addressField]);
+        };
+        fetchOrder();
+    }, [orderId, type]);
 
+    // Fetch addresses for customer
+    useEffect(() => {
+        if (!customerId) {
+            setAddresses([]);
+            return;
+        }
+        const fetchAddresses = async () => {
+            const { data, error } = await supabase
+                .from('addresses')
+                .select('id, adresa, detalii')
+                .eq('customer_id', customerId)
+                .order('id');
+            if (error) {
+                toast.error('Eroare la încărcarea adreselor: ' + error.message);
+                setAddresses([]);
+                return;
+            }
+            setAddresses(data || []);
+        };
+        fetchAddresses();
+    }, [customerId]);
 
     // Save selected address to order
-    const handleAddressChange = async (addressId: string) => {
-        const newId = addressId ? parseInt(addressId) : undefined;
-        onChange(newId);
-
+    const handleAddressChange = async (addressIdStr: string) => {
+        const newId = addressIdStr ? parseInt(addressIdStr) : undefined;
+        setAddressId(newId);
         if (!orderId || newId === undefined) return;
-
         setSaving(true);
-        const supabase = createClient();
         const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
         const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
-
         const dateToSave = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
             ? new Date(dateTime)
             : new Date();
-
         const { error } = await supabase
             .from('orders')
             .update({
@@ -84,12 +121,11 @@ export default function OrderAddress({
                 [dateTimeField]: dateToSave.toISOString(),
             })
             .eq('id', orderId);
-
         setSaving(false);
         if (error) {
             toast.error('Eroare la salvarea adresei: ' + error.message);
-        } else if (addressId) {
-            onDateTimeChange(dateToSave.toISOString());
+        } else {
+            setDateTime(dateToSave.toISOString());
             setIsActive(true);
         }
     };
@@ -98,10 +134,22 @@ export default function OrderAddress({
     const handleAddAddress = async () => {
         if (!customerId) return;
         setSaving(true);
-        const addedAddress = await onAddAddress(newAddress);
+        const { data, error } = await supabase
+            .from('addresses')
+            .insert({
+                ...newAddress,
+                customer_id: customerId,
+            })
+            .select('id, adresa, detalii')
+            .single();
         setSaving(false);
-        if (addedAddress) {
-            await handleAddressChange(addedAddress.id.toString());
+        if (error) {
+            toast.error('Eroare la adăugarea adresei: ' + error.message);
+            return;
+        }
+        if (data) {
+            setAddresses(prev => [data, ...prev]);
+            await handleAddressChange(data.id.toString());
             setAddOpen(false);
             setNewAddress({ adresa: '', detalii: '' });
             toast.success('Adresă adăugată!');
@@ -109,20 +157,16 @@ export default function OrderAddress({
     };
 
     const handleCancelAddress = async () => {
-        onChange(undefined);
-        onDateTimeChange('');
-
+        setAddressId(undefined);
+        setDateTime("");
+        setIsActive(false);
         if (!orderId) return;
-
         setSaving(true);
-        const supabase = createClient();
-        const field =
-            type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
-        const dateTimeField =
-            type === 'colectare' ? 'data_colectare' : 'data_returnare';
+        const addressField = type === 'colectare' ? 'adresa_colectare_id' : 'adresa_returnare_id';
+        const dateTimeField = type === 'colectare' ? 'data_colectare' : 'data_returnare';
         const { error } = await supabase
             .from('orders')
-            .update({ [field]: null, [dateTimeField]: null })
+            .update({ [addressField]: null, [dateTimeField]: null })
             .eq('id', orderId);
         setSaving(false);
         if (error) {
@@ -133,11 +177,9 @@ export default function OrderAddress({
     };
 
     const updateDateTimeInDb = async (newDateTime: Date | null) => {
-        onDateTimeChange(newDateTime ? newDateTime.toISOString() : '');
+        setDateTime(newDateTime ? newDateTime.toISOString() : '');
         if (!orderId) return;
-
         setSaving(true);
-        const supabase = createClient();
         const field = type === 'colectare' ? 'data_colectare' : 'data_returnare';
         const { error } = await supabase
             .from('orders')
@@ -154,11 +196,9 @@ export default function OrderAddress({
             updateDateTimeInDb(null);
             return;
         }
-
         const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
             ? new Date(dateTime)
             : new Date();
-
         current.setFullYear(selectedDate.getFullYear());
         current.setMonth(selectedDate.getMonth());
         current.setDate(selectedDate.getDate());
@@ -167,15 +207,12 @@ export default function OrderAddress({
 
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const [hours, minutes] = e.target.value.split(':').map(Number);
-
         const current = (dateTime && new Date(dateTime).toString() !== 'Invalid Date')
             ? new Date(dateTime)
             : new Date();
-
         current.setHours(hours, minutes);
         updateDateTimeInDb(current);
     };
-
 
     const title = type === 'colectare' ? 'Adresă Colectare' : 'Adresă Returnare';
     const currentDateTime = (dateTime && new Date(dateTime).toString() !== 'Invalid Date') ? new Date(dateTime) : null;
@@ -196,23 +233,21 @@ export default function OrderAddress({
                     </Button>
                 )}
             </div>
-
             {!isActive && (
                 <Button
                     variant="secondary"
                     onClick={() => setIsActive(true)}
-                    disabled={!customerId}
+                    disabled={!customerId || loading}
                 >
                     Setează {title}
                 </Button>
             )}
-
             {isActive && (
                 <>
                     <Select
-                        value={value?.toString() ?? ''}
+                        value={addressId?.toString() ?? ''}
                         onValueChange={handleAddressChange}
-                        disabled={saving || !customerId}
+                        disabled={saving || !customerId || loading}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Selectează o adresă..." />
@@ -225,16 +260,14 @@ export default function OrderAddress({
                             ))}
                         </SelectContent>
                     </Select>
-
                     <Button
                         size="sm"
                         variant={addOpen ? 'destructive' : 'secondary'}
                         onClick={() => setAddOpen(v => !v)}
-                        disabled={!customerId}
+                        disabled={!customerId || loading}
                     >
                         {addOpen ? 'Anulează' : 'Adaugă adresă nouă'}
                     </Button>
-
                     {addOpen && (
                         <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                             <GeoapifyAutocomplete
@@ -262,7 +295,7 @@ export default function OrderAddress({
                                 <Button
                                     variant={'outline'}
                                     className="flex-1"
-                                    disabled={saving}
+                                    disabled={saving || loading}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {currentDateTime ? (
@@ -286,11 +319,15 @@ export default function OrderAddress({
                             className="w-32"
                             value={currentDateTime ? format(currentDateTime, 'HH:mm') : ''}
                             onChange={handleTimeChange}
-                            disabled={saving}
+                            disabled={saving || loading}
                         />
                     </div>
-
                 </>
+            )}
+            {(loading || saving) && (
+                <div className="text-xs text-muted-foreground">
+                    {loading ? 'Se încarcă...' : 'Se salvează...'}
+                </div>
             )}
         </Card>
     );

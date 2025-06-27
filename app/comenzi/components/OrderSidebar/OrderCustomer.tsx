@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,30 +16,115 @@ import {
 } from "@/components/ui/command";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCustomer } from "./useCustomer";
+import { createClient } from "@/utils/supabase/client";
+import { toast } from "sonner";
 
-export default function OrderCustomer({
-    orderId,
-    value,
-    onChange,
-}: {
-    orderId?: number | null,
-    value?: string,
-    onChange?: (id: string) => void,
-}) {
-    const {
-        customers,
-        customerSearch,
-        setCustomerSearch,
-        addCustomerOpen,
-        setAddCustomerOpen,
-        newCustomer,
-        setNewCustomer,
-        addingCustomer,
-        selectedCustomerId,
-        handleAddCustomer,
-        handleCustomerChange
-    } = useCustomer(orderId, value, onChange);
+export default function OrderCustomer({ orderId }: { orderId?: number | null }) {
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+    const [newCustomer, setNewCustomer] = useState({ nume: "", prenume: "", email: "", telefon: "" });
+    const [addingCustomer, setAddingCustomer] = useState(false);
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+    const [loading, setLoading] = useState(false);
+    const supabase = createClient();
+
+    // Fetch order's customer when orderId changes
+    useEffect(() => {
+        if (!orderId) {
+            setSelectedCustomerId("");
+            return;
+        }
+        setLoading(true);
+        const fetchOrderCustomer = async () => {
+            const { data, error } = await supabase
+                .from("orders")
+                .select("customer_id")
+                .eq("id", orderId)
+                .single();
+            setLoading(false);
+            if (error) {
+                toast.error("Eroare la încărcarea clientului: " + error.message);
+                setSelectedCustomerId("");
+                return;
+            }
+            setSelectedCustomerId(data?.customer_id || "");
+        };
+        fetchOrderCustomer();
+    }, [orderId]);
+
+    // Fetch customers when search changes
+    useEffect(() => {
+        let isCancelled = false;
+        const fetchCustomers = async () => {
+            let query = supabase
+                .from("customers")
+                .select("id, nume, prenume, email, telefon")
+                .order("nume");
+            if (customerSearch.trim()) {
+                const cleanedSearch = customerSearch.trim().replace(/[&|!():*]/g, "");
+                const tsQuery = cleanedSearch
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map(term => `${term}:*`)
+                    .join(" & ");
+                if (tsQuery) {
+                    query = query.textSearch("fts", tsQuery, {
+                        config: "romanian",
+                        type: "tsquery",
+                    } as any);
+                }
+            }
+            const { data } = await query;
+            if (!isCancelled) {
+                setCustomers(data || []);
+            }
+        };
+        const timeoutId = setTimeout(() => {
+            fetchCustomers();
+        }, 300);
+        return () => {
+            clearTimeout(timeoutId);
+            isCancelled = true;
+        };
+    }, [customerSearch]);
+
+    // Add new customer
+    const handleAddCustomer = async () => {
+        setAddingCustomer(true);
+        const { data, error } = await supabase
+            .from("customers")
+            .insert(newCustomer)
+            .select()
+            .single();
+        setAddingCustomer(false);
+        if (error) {
+            toast.error("Eroare la adăugarea clientului: " + error.message);
+            return;
+        } else if (data) {
+            setCustomers(prev => [data, ...prev]);
+            await handleCustomerChange(data.id);
+            setAddCustomerOpen(false);
+            setNewCustomer({ nume: "", prenume: "", email: "", telefon: "" });
+            toast.success("Client adăugat!");
+        }
+    };
+
+    // Update order's customer
+    const handleCustomerChange = async (customerId: string) => {
+        // Only update if the selected customer is different from the current one
+        if (!orderId || customerId === selectedCustomerId) return;
+        setSelectedCustomerId(customerId);
+        setLoading(true);
+        const { error } = await supabase
+            .from("orders")
+            .update({ customer_id: customerId })
+            .eq("id", orderId);
+        setLoading(false);
+        if (error) {
+            toast.error("Eroare la actualizarea clientului: " + error.message);
+        }
+    };
 
     const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
 
@@ -57,6 +142,7 @@ export default function OrderCustomer({
                         role="combobox"
                         aria-expanded={customerComboboxOpen}
                         className="w-full justify-between overflow-hidden"
+                        disabled={loading}
                     >
                         <span className="truncate">
                             {selectedCustomerId ? (
@@ -88,7 +174,6 @@ export default function OrderCustomer({
                                             key={c.id}
                                             value={c.id}
                                             onSelect={() => {
-                                                console.log(c.id);
                                                 handleCustomerChange(c.id);
                                                 setCustomerComboboxOpen(false);
                                             }}
@@ -112,6 +197,7 @@ export default function OrderCustomer({
                 size="sm"
                 variant={addCustomerOpen ? 'destructive' : 'secondary'}
                 onClick={() => setAddCustomerOpen(v => !v)}
+                disabled={loading}
             >
                 {addCustomerOpen ? 'Anulează' : 'Adaugă client nou'}
             </Button>
@@ -140,6 +226,11 @@ export default function OrderCustomer({
                     <Button size="sm" onClick={handleAddCustomer} disabled={addingCustomer}>
                         {addingCustomer ? 'Se adaugă...' : 'Salvează clientul'}
                     </Button>
+                </div>
+            )}
+            {(loading || addingCustomer) && (
+                <div className="text-xs text-muted-foreground">
+                    {loading ? 'Se încarcă...' : 'Se salvează...'}
                 </div>
             )}
         </Card>

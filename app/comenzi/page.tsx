@@ -136,56 +136,65 @@ export default function ComenziPage() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'orders' },
-                (payload) => {
-                    setOrders(prevOrders => {
-                        const { eventType, new: newOrder, old: oldOrder } = payload;
-                        if (eventType === 'INSERT') {
-                            if (orderMatchesFilters(newOrder)) {
-                                // Add if not already present
-                                if (!prevOrders.some(o => o.id === newOrder.id)) {
-                                    const mappedOrder = {
-                                        ...newOrder,
-                                        status: typeof newOrder.status === 'string' ? newOrder.status : (newOrder.status ?? ''),
-                                        customers: newOrder.nume ? {
-                                            nume: newOrder.nume,
-                                            prenume: newOrder.prenume,
-                                            telefon: newOrder.telefon,
-                                            email: newOrder.email,
-                                        } : null,
-                                        adresa_colectare: newOrder.adresa_colectare ? { adresa: newOrder.adresa_colectare } : null,
-                                        adresa_returnare: newOrder.adresa_returnare ? { adresa: newOrder.adresa_returnare } : null,
-                                    } as Order;
-                                    return [mappedOrder, ...prevOrders];
-                                }
+                async (payload) => {
+                    const { eventType, new: newOrder, old: oldOrder } = payload;
+                    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+                        // Fetch the full order from the view to get joined data
+                        const { data: viewOrder } = await supabase
+                            .from('orders_with_totals')
+                            .select(`
+                                id,
+                                date_created,
+                                status,
+                                total_comanda_cu_discount,
+                                urgent,
+                                payment_method,
+                                customer_id,
+                                adresa_colectare_id,
+                                adresa_returnare_id,
+                                nume,
+                                prenume,
+                                telefon,
+                                email,
+                                adresa_colectare,
+                                adresa_returnare,
+                                subtotal_articole,
+                                discount_percent
+                            `)
+                            .eq('id', newOrder.id)
+                            .single();
+                        if (!viewOrder) return;
+                        const mappedOrder = {
+                            ...viewOrder,
+                            status: typeof viewOrder.status === 'string' ? viewOrder.status : (viewOrder.status ?? ''),
+                            customers: viewOrder.nume ? {
+                                nume: viewOrder.nume,
+                                prenume: viewOrder.prenume,
+                                telefon: viewOrder.telefon,
+                                email: viewOrder.email,
+                            } : null,
+                            adresa_colectare: viewOrder.adresa_colectare ? { adresa: viewOrder.adresa_colectare } : null,
+                            adresa_returnare: viewOrder.adresa_returnare ? { adresa: viewOrder.adresa_returnare } : null,
+                        } as Order;
+                        setOrders(prevOrders => {
+                            // Remove if no longer matches
+                            if (!orderMatchesFilters(viewOrder)) {
+                                return prevOrders.filter(o => o.id !== viewOrder.id);
                             }
-                            return prevOrders;
-                        }
-                        if (eventType === 'UPDATE') {
-                            // Remove if no longer matches, update if matches
-                            if (!orderMatchesFilters(newOrder)) {
-                                return prevOrders.filter(o => o.id !== newOrder.id);
+                            // Update or insert
+                            const exists = prevOrders.some(o => o.id === viewOrder.id);
+                            if (exists) {
+                                return prevOrders.map(o => o.id === viewOrder.id ? mappedOrder : o);
+                            } else {
+                                return [mappedOrder, ...prevOrders];
                             }
-                            const mappedOrder = {
-                                ...newOrder,
-                                status: typeof newOrder.status === 'string' ? newOrder.status : (newOrder.status ?? ''),
-                                customers: newOrder.nume ? {
-                                    nume: newOrder.nume,
-                                    prenume: newOrder.prenume,
-                                    telefon: newOrder.telefon,
-                                    email: newOrder.email,
-                                } : null,
-                                adresa_colectare: newOrder.adresa_colectare ? { adresa: newOrder.adresa_colectare } : null,
-                                adresa_returnare: newOrder.adresa_returnare ? { adresa: newOrder.adresa_returnare } : null,
-                            } as Order;
-                            return prevOrders.map(o =>
-                                o.id === newOrder.id ? mappedOrder : o
-                            );
-                        }
-                        if (eventType === 'DELETE') {
-                            return prevOrders.filter(o => o.id !== oldOrder.id);
-                        }
-                        return prevOrders;
-                    });
+                        });
+                        return;
+                    }
+                    if (eventType === 'DELETE') {
+                        setOrders(prevOrders => prevOrders.filter(o => o.id !== oldOrder.id));
+                        return;
+                    }
                 }
             )
             .subscribe();
