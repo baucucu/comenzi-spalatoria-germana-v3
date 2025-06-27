@@ -218,8 +218,7 @@ export default function ComenziPage() {
                 <OrderSidebar
                     open={sidebarOpen}
                     onOpenChange={setSidebarOpen}
-                    editingOrder={editingOrder}
-                    onSaved={handleSaved}
+                    orderId={editingOrder?.id ?? null}
                 />
             </div>
         </PageContentWrapper>

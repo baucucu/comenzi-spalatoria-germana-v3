@@ -21,22 +21,11 @@ interface OrderStatusType {
     color: string;
 }
 
-export default function OrderStatus({
-    orderId,
-    status,
-    urgent,
-    onStatusChange,
-    onUrgentChange,
-}: {
-    orderId?: number | null;
-    status: string;
-    urgent: boolean;
-    onStatusChange: (status: string) => void;
-    onUrgentChange: (urgent: boolean) => void;
-}) {
+export default function OrderStatusComponent({ orderId }: { orderId?: number | null }) {
     const [statuses, setStatuses] = useState<OrderStatusType[]>([]);
+    const [status, setStatus] = useState<string>("");
+    const [urgent, setUrgent] = useState<boolean>(false);
     const [updating, setUpdating] = useState(false);
-
     // Fetch statuses
     useEffect(() => {
         const fetchStatuses = async () => {
@@ -49,14 +38,31 @@ export default function OrderStatus({
         fetchStatuses();
     }, []);
 
-    // Update status or urgent
-    const updateOrder = async (values: Partial<{ status: string; urgent: boolean }>) => {
+    // Fetch order status/urgent
+    useEffect(() => {
         if (!orderId) {
-            if (values.status !== undefined) onStatusChange(values.status);
-            if (values.urgent !== undefined) onUrgentChange(values.urgent);
+            setStatus("");
+            setUrgent(false);
             return;
         }
+        const fetchOrder = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from("orders")
+                .select("status, urgent")
+                .eq("id", orderId)
+                .single();
+            if (data) {
+                setStatus(data.status || "");
+                setUrgent(data.urgent || false);
+            }
+        };
+        fetchOrder();
+    }, [orderId]);
 
+    // Update status or urgent
+    const updateOrder = async (values: Partial<{ status: string; urgent: boolean }>) => {
+        if (!orderId) return;
         setUpdating(true);
         const supabase = createClient();
         const { error } = await supabase
@@ -65,8 +71,8 @@ export default function OrderStatus({
             .eq("id", orderId);
         setUpdating(false);
         if (!error) {
-            if (values.status) onStatusChange(values.status);
-            if (values.urgent !== undefined) onUrgentChange(values.urgent);
+            if (values.status !== undefined) setStatus(values.status);
+            if (values.urgent !== undefined) setUrgent(values.urgent);
             toast.success("Comandă actualizată!");
         } else {
             toast.error("Eroare la actualizare: " + error.message);
