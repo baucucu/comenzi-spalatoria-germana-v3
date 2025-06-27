@@ -46,14 +46,21 @@ export default function OrderFooter({ orderId }: OrderFooterProps) {
             }
         };
         fetchTotals();
-        // Real-time subscription
-        const channel = supabase.channel(`order-footer-${orderId}`)
+        // Real-time subscription for orders
+        const channelOrders = supabase.channel(`order-footer-orders-${orderId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, () => {
                 fetchTotals();
             })
             .subscribe();
+        // Real-time subscription for order_services
+        const channelOrderServices = supabase.channel(`order-footer-order-services-${orderId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'order_services', filter: `order_id=eq.${orderId}` }, () => {
+                fetchTotals();
+            })
+            .subscribe();
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(channelOrders);
+            supabase.removeChannel(channelOrderServices);
         };
     }, [orderId]);
 
