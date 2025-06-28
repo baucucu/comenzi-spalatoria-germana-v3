@@ -19,79 +19,99 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 
+interface CustomerFull {
+    id: string;
+    nume: string;
+    prenume: string;
+    email: string;
+    telefon: string;
+}
+
 export default function OrderCustomer({ orderId }: { orderId?: number | null }) {
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [customerSearch, setCustomerSearch] = useState("");
+    const [customers, setCustomers] = useState<CustomerFull[]>([]);
+    const [search, setSearch] = useState("");
+    const [filteredCustomers, setFilteredCustomers] = useState<CustomerFull[]>([]);
     const [addCustomerOpen, setAddCustomerOpen] = useState(false);
     const [newCustomer, setNewCustomer] = useState({ nume: "", prenume: "", email: "", telefon: "" });
     const [addingCustomer, setAddingCustomer] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-    const [loading, setLoading] = useState(false);
-    const supabase = createClient();
+    const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
 
-    // Fetch order's customer when orderId changes
+    // Fetch all customers on mount
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .from("customers")
+                .select("id, nume, prenume, email, telefon")
+                .order("nume")
+                .limit(1000);
+            if (error) {
+                toast.error("Eroare la încărcarea clienților: " + error.message);
+                return;
+            }
+            setCustomers(data || []);
+        };
+        fetchCustomers();
+    }, []);
+
+    // Filter customers client-side
+    useEffect(() => {
+        console.log('All customers:', customers);
+        console.log('Search:', search);
+        if (!search.trim()) {
+            setFilteredCustomers(customers);
+            return;
+        }
+        const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        const filtered = customers.filter(c =>
+            terms.every(term =>
+                (c.nume && c.nume.toLowerCase().includes(term)) ||
+                (c.prenume && c.prenume.toLowerCase().includes(term)) ||
+                (c.email && c.email.toLowerCase().includes(term)) ||
+                (c.telefon && c.telefon.toLowerCase().includes(term))
+            )
+        );
+        console.log('Filtered customers:', filtered);
+        setFilteredCustomers(filtered);
+    }, [search, customers]);
+
+    // Fetch selected customer for orderId
     useEffect(() => {
         if (!orderId) {
             setSelectedCustomerId("");
             return;
         }
-        setLoading(true);
         const fetchOrderCustomer = async () => {
+            const supabase = createClient();
             const { data, error } = await supabase
                 .from("orders")
                 .select("customer_id")
                 .eq("id", orderId)
                 .single();
-            setLoading(false);
-            if (error) {
-                toast.error("Eroare la încărcarea clientului: " + error.message);
-                setSelectedCustomerId("");
-                return;
-            }
-            setSelectedCustomerId(data?.customer_id || "");
+            if (data && data.customer_id) setSelectedCustomerId(data.customer_id);
         };
         fetchOrderCustomer();
     }, [orderId]);
 
-    // Fetch customers when search changes
-    useEffect(() => {
-        let isCancelled = false;
-        const fetchCustomers = async () => {
-            let query = supabase
-                .from("customers")
-                .select("id, nume, prenume, email, telefon")
-                .order("nume");
-            if (customerSearch.trim()) {
-                const cleanedSearch = customerSearch.trim().replace(/[&|!():*]/g, "");
-                const tsQuery = cleanedSearch
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .map(term => `${term}:*`)
-                    .join(" & ");
-                if (tsQuery) {
-                    query = query.textSearch("fts", tsQuery, {
-                        config: "romanian",
-                        type: "tsquery",
-                    } as any);
-                }
-            }
-            const { data } = await query;
-            if (!isCancelled) {
-                setCustomers(data || []);
-            }
-        };
-        const timeoutId = setTimeout(() => {
-            fetchCustomers();
-        }, 300);
-        return () => {
-            clearTimeout(timeoutId);
-            isCancelled = true;
-        };
-    }, [customerSearch]);
+    // Update order's customer
+    const handleCustomerChange = async (customerId: string) => {
+        setSelectedCustomerId(customerId);
+        if (!orderId) return;
+        const supabase = createClient();
+        const { error } = await supabase
+            .from("orders")
+            .update({ customer_id: customerId })
+            .eq("id", orderId);
+        if (error) {
+            toast.error("Eroare la actualizarea clientului: " + error.message);
+        }
+    };
 
     // Add new customer
     const handleAddCustomer = async () => {
         setAddingCustomer(true);
+        const supabase = createClient();
         const { data, error } = await supabase
             .from("customers")
             .insert(newCustomer)
@@ -103,36 +123,12 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
             return;
         } else if (data) {
             setCustomers(prev => [data, ...prev]);
-            await handleCustomerChange(data.id);
+            handleCustomerChange(data.id);
             setAddCustomerOpen(false);
             setNewCustomer({ nume: "", prenume: "", email: "", telefon: "" });
             toast.success("Client adăugat!");
         }
     };
-
-    // Update order's customer
-    const handleCustomerChange = async (customerId: string) => {
-        // Only update if the selected customer is different from the current one
-        if (!orderId || customerId === selectedCustomerId) return;
-        setSelectedCustomerId(customerId);
-        setLoading(true);
-        const { error } = await supabase
-            .from("orders")
-            .update({
-                customer_id: customerId,
-                adresa_colectare_id: null,
-                adresa_returnare_id: null,
-                data_colectare: null,
-                data_returnare: null,
-            })
-            .eq("id", orderId);
-        setLoading(false);
-        if (error) {
-            toast.error("Eroare la actualizarea clientului: " + error.message);
-        }
-    };
-
-    const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
 
     return (
         <Card className="p-4 flex flex-col gap-2">
@@ -148,7 +144,6 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
                         role="combobox"
                         aria-expanded={customerComboboxOpen}
                         className="w-full justify-between overflow-hidden"
-                        disabled={loading}
                     >
                         <span className="truncate">
                             {selectedCustomerId ? (
@@ -168,33 +163,37 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
                     <Command>
                         <CommandInput
                             placeholder="Caută client..."
-                            onValueChange={setCustomerSearch}
+                            value={search}
+                            onValueChange={setSearch}
                         />
                         <CommandList>
-                            <CommandEmpty>Niciun client găsit.</CommandEmpty>
-                            <CommandGroup>
-                                {customers.map(c => {
-                                    const display = `${c.nume} ${c.prenume}${c.telefon ? ` - ${c.telefon}` : ''}${c.email ? ` - ${c.email}` : ''}`;
-                                    return (
-                                        <CommandItem
-                                            key={c.id}
-                                            value={c.id}
-                                            onSelect={() => {
-                                                handleCustomerChange(c.id);
-                                                setCustomerComboboxOpen(false);
-                                            }}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    'mr-2 h-4 w-4',
-                                                    selectedCustomerId === c.id ? 'opacity-100' : 'opacity-0'
-                                                )}
-                                            />
-                                            {display}
-                                        </CommandItem>
-                                    );
-                                })}
-                            </CommandGroup>
+                            {filteredCustomers.length === 0 ? (
+                                <CommandEmpty>Niciun client găsit.</CommandEmpty>
+                            ) : (
+                                <CommandGroup>
+                                    {filteredCustomers.map(c => {
+                                        const display = `${c.nume} ${c.prenume}${c.telefon ? ` - ${c.telefon}` : ''}${c.email ? ` - ${c.email}` : ''}`;
+                                        return (
+                                            <CommandItem
+                                                key={c.id}
+                                                value={`${c.nume} ${c.prenume} ${c.email} ${c.telefon}`}
+                                                onSelect={() => {
+                                                    handleCustomerChange(c.id);
+                                                    setCustomerComboboxOpen(false);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        'mr-2 h-4 w-4',
+                                                        selectedCustomerId === c.id ? 'opacity-100' : 'opacity-0'
+                                                    )}
+                                                />
+                                                {display}
+                                            </CommandItem>
+                                        );
+                                    })}
+                                </CommandGroup>
+                            )}
                         </CommandList>
                     </Command>
                 </PopoverContent>
@@ -203,7 +202,6 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
                 size="sm"
                 variant={addCustomerOpen ? 'destructive' : 'secondary'}
                 onClick={() => setAddCustomerOpen(v => !v)}
-                disabled={loading}
             >
                 {addCustomerOpen ? 'Anulează' : 'Adaugă client nou'}
             </Button>
@@ -234,9 +232,9 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
                     </Button>
                 </div>
             )}
-            {(loading || addingCustomer) && (
+            {(addingCustomer) && (
                 <div className="text-xs text-muted-foreground">
-                    {loading ? 'Se încarcă...' : 'Se salvează...'}
+                    {'Se salvează...'}
                 </div>
             )}
         </Card>
