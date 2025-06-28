@@ -29,6 +29,13 @@ export default function OrderSidebar({ open, onOpenChange, orderId, onSaved }: O
         setInternalOrderId(orderId);
     }, [orderId]);
 
+    // Reset internalOrderId when opening for a new order
+    useEffect(() => {
+        if (open && orderId === null) {
+            setInternalOrderId(null);
+        }
+    }, [open, orderId]);
+
     const handleOrderCreated = (newOrderId: number) => {
         setInternalOrderId(newOrderId);
     };
