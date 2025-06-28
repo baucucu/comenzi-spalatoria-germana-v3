@@ -45,6 +45,9 @@ export default function OrderStatusComponent({ orderId }: { orderId?: number | n
             setUrgent(false);
             return;
         }
+        // Optimistically set status to 'noua' for new orders
+        setStatus("noua");
+        setUrgent(false);
         const fetchOrder = async () => {
             const supabase = createClient();
             const { data } = await supabase
