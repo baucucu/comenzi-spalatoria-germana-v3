@@ -161,15 +161,24 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
             <div className="space-y-4">
                 <div className="space-y-1">
                     <Label htmlFor="prenume">Prenume</Label>
-                    <Input id="prenume" value={prenume} onChange={e => setPrenume(e.target.value)} required placeholder="ex: Andrei" />
+                    <Input id="prenume" value={prenume} onChange={e => setPrenume(e.target.value)} required placeholder="ex: Andrei"
+                        onInvalid={e => (e.currentTarget as HTMLInputElement).setCustomValidity('Acest câmp este obligatoriu.')}
+                        onInput={e => (e.currentTarget as HTMLInputElement).setCustomValidity('')}
+                    />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="nume">Nume</Label>
-                    <Input id="nume" value={nume} onChange={e => setNume(e.target.value)} required placeholder="ex: Popescu" />
+                    <Input id="nume" value={nume} onChange={e => setNume(e.target.value)} required placeholder="ex: Popescu"
+                        onInvalid={e => (e.currentTarget as HTMLInputElement).setCustomValidity('Acest câmp este obligatoriu.')}
+                        onInput={e => (e.currentTarget as HTMLInputElement).setCustomValidity('')}
+                    />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="telefon">Telefon</Label>
-                    <Input id="telefon" value={telefon} onChange={e => setTelefon(e.target.value)} required placeholder="ex: 0722123456" />
+                    <Input id="telefon" value={telefon} onChange={e => setTelefon(e.target.value)} required placeholder="ex: 0722123456"
+                        onInvalid={e => (e.currentTarget as HTMLInputElement).setCustomValidity('Acest câmp este obligatoriu.')}
+                        onInput={e => (e.currentTarget as HTMLInputElement).setCustomValidity('')}
+                    />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
@@ -189,7 +198,7 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
                     <div className="flex flex-col gap-2">
                         {addresses.map((addr, idx) => (
                             <AddressInputCard
-                                key={addr.id || addr.tempKey}
+                                key={addr.id || addr.tempKey || idx}
                                 adresa={addr.adresa}
                                 detalii={addr.detalii}
                                 onAdresaChange={value => handleAddressChange(idx, value)}
