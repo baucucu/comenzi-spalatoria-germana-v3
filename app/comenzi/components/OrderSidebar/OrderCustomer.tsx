@@ -57,8 +57,6 @@ export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: n
 
     // Filter customers client-side
     useEffect(() => {
-        console.log('All customers:', customers);
-        console.log('Search:', search);
         if (!search.trim()) {
             setFilteredCustomers(customers);
             return;
