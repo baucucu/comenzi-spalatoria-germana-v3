@@ -72,7 +72,7 @@ export default function OrderSidebar({ open, onOpenChange, orderId, onSaved }: O
                             <OrderDiscount orderId={internalOrderId} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
-                            <OrderItems orderId={internalOrderId} onItemsChange={onSaved} />
+                            <OrderItems orderId={internalOrderId} />
                         </TabsContent>
                         <TabsContent value="notite" className="m-0 flex flex-col gap-4">
                             <OrderNotes orderId={internalOrderId} />
