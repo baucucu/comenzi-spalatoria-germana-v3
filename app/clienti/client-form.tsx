@@ -168,12 +168,12 @@ export function ClientForm({ mode, initialValues, onSuccess }: ClientFormProps) 
                     <Input id="nume" value={nume} onChange={e => setNume(e.target.value)} required placeholder="ex: Popescu" />
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="ex: andrei@email.com" />
-                </div>
-                <div className="space-y-1">
                     <Label htmlFor="telefon">Telefon</Label>
                     <Input id="telefon" value={telefon} onChange={e => setTelefon(e.target.value)} required placeholder="ex: 0722123456" />
+                </div>
+                <div className="space-y-1">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="ex: andrei@email.com" />
                 </div>
                 <div className="flex items-center justify-between py-2">
                     <Label htmlFor="acceptSms">Marketing SMS</Label>

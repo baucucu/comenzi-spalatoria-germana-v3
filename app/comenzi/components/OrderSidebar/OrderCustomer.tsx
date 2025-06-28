@@ -18,6 +18,7 @@ import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface CustomerFull {
     id: string;
@@ -32,7 +33,7 @@ export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: n
     const [search, setSearch] = useState("");
     const [filteredCustomers, setFilteredCustomers] = useState<CustomerFull[]>([]);
     const [addCustomerOpen, setAddCustomerOpen] = useState(false);
-    const [newCustomer, setNewCustomer] = useState({ nume: "", prenume: "", email: "", telefon: "" });
+    const [newCustomer, setNewCustomer] = useState({ nume: "", prenume: "", email: "", telefon: "", accept_marketing_email: false, accept_marketing_sms: false });
     const [addingCustomer, setAddingCustomer] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
     const [customerComboboxOpen, setCustomerComboboxOpen] = useState(false);
@@ -123,11 +124,23 @@ export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: n
 
     // Add new customer
     const handleAddCustomer = async () => {
+        // Validate required fields
+        if (!newCustomer.nume.trim() || !newCustomer.prenume.trim() || !newCustomer.telefon.trim()) {
+            toast.error("Nume, prenume și telefon sunt obligatorii.");
+            return;
+        }
         setAddingCustomer(true);
         const supabase = createClient();
         const { data, error } = await supabase
             .from("customers")
-            .insert(newCustomer)
+            .insert({
+                nume: newCustomer.nume,
+                prenume: newCustomer.prenume,
+                email: newCustomer.email,
+                telefon: newCustomer.telefon,
+                accept_marketing_email: newCustomer.accept_marketing_email,
+                accept_marketing_sms: newCustomer.accept_marketing_sms
+            })
             .select()
             .single();
         setAddingCustomer(false);
@@ -138,7 +151,7 @@ export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: n
             setCustomers(prev => [data, ...prev]);
             handleCustomerChange(data.id);
             setAddCustomerOpen(false);
-            setNewCustomer({ nume: "", prenume: "", email: "", telefon: "" });
+            setNewCustomer({ nume: "", prenume: "", email: "", telefon: "", accept_marketing_email: false, accept_marketing_sms: false });
             toast.success("Client adăugat!");
         }
     };
@@ -221,25 +234,41 @@ export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: n
             {addCustomerOpen && (
                 <div className="border rounded p-3 mt-2 flex flex-col gap-2 bg-muted/50">
                     <Input
-                        placeholder="Nume"
+                        placeholder="Nume*"
                         value={newCustomer.nume}
                         onChange={e => setNewCustomer({ ...newCustomer, nume: e.target.value })}
                     />
                     <Input
-                        placeholder="Prenume"
+                        placeholder="Prenume*"
                         value={newCustomer.prenume}
                         onChange={e => setNewCustomer({ ...newCustomer, prenume: e.target.value })}
+                    />
+                    <Input
+                        placeholder="Telefon*"
+                        value={newCustomer.telefon}
+                        onChange={e => setNewCustomer({ ...newCustomer, telefon: e.target.value })}
                     />
                     <Input
                         placeholder="Email"
                         value={newCustomer.email}
                         onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
                     />
-                    <Input
-                        placeholder="Telefon"
-                        value={newCustomer.telefon}
-                        onChange={e => setNewCustomer({ ...newCustomer, telefon: e.target.value })}
-                    />
+                    <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="accept_marketing_sms">Marketing SMS</Label>
+                        <Switch
+                            id="accept_marketing_sms"
+                            checked={newCustomer.accept_marketing_sms}
+                            onCheckedChange={checked => setNewCustomer({ ...newCustomer, accept_marketing_sms: checked })}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="accept_marketing_email">Marketing Email</Label>
+                        <Switch
+                            id="accept_marketing_email"
+                            checked={newCustomer.accept_marketing_email}
+                            onCheckedChange={checked => setNewCustomer({ ...newCustomer, accept_marketing_email: checked })}
+                        />
+                    </div>
                     <Button size="sm" onClick={handleAddCustomer} disabled={addingCustomer}>
                         {addingCustomer ? 'Se adaugă...' : 'Salvează clientul'}
                     </Button>
