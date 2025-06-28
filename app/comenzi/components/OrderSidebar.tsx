@@ -11,6 +11,7 @@ import OrderItems from "./OrderSidebar/OrderItems";
 import OrderFooter from "./OrderSidebar/OrderFooter";
 import OrderNotes from "./OrderSidebar/OrderNotes";
 import OrderMarcute from "./OrderSidebar/OrderMarcute";
+import { useState, useEffect } from "react";
 
 
 interface OrderSidebarProps {
@@ -22,13 +23,23 @@ interface OrderSidebarProps {
 
 
 export default function OrderSidebar({ open, onOpenChange, orderId, onSaved }: OrderSidebarProps) {
+    const [internalOrderId, setInternalOrderId] = useState<number | null>(orderId);
+
+    useEffect(() => {
+        setInternalOrderId(orderId);
+    }, [orderId]);
+
+    const handleOrderCreated = (newOrderId: number) => {
+        setInternalOrderId(newOrderId);
+    };
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange} >
             <SheetContent className="max-w-lg w-full h-full flex flex-col p-0 gap-0">
                 <SheetHeader className="p-4 border-b">
                     <SheetTitle className="flex gap-2 items-center">
                         <span className="font-bold text-lg">
-                            Comanda #{orderId ?? 'Nouă'}
+                            Comanda #{internalOrderId ?? 'Nouă'}
                         </span>
                         <span className="text-sm text-muted-foreground">
                             {/* Optionally show date or other info here if needed */}
@@ -52,23 +63,23 @@ export default function OrderSidebar({ open, onOpenChange, orderId, onSaved }: O
                     </TabsList>
                     <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/25">
                         <TabsContent value="detalii" className="m-0 flex flex-col gap-4">
-                            <OrderStatusComponent orderId={orderId} />
-                            <OrderMarcute orderId={orderId} />
-                            <OrderCustomer orderId={orderId} />
-                            <OrderAddress orderId={orderId} type="colectare" />
-                            <OrderAddress orderId={orderId} type="returnare" />
-                            <OrderPaymentMethod orderId={orderId} />
-                            <OrderDiscount orderId={orderId} />
+                            <OrderStatusComponent orderId={internalOrderId} />
+                            <OrderMarcute orderId={internalOrderId} />
+                            <OrderCustomer orderId={internalOrderId} onOrderCreated={handleOrderCreated} />
+                            <OrderAddress orderId={internalOrderId} type="colectare" />
+                            <OrderAddress orderId={internalOrderId} type="returnare" />
+                            <OrderPaymentMethod orderId={internalOrderId} />
+                            <OrderDiscount orderId={internalOrderId} />
                         </TabsContent>
                         <TabsContent value="articole" className="m-0 flex flex-col gap-4">
-                            <OrderItems orderId={orderId} onItemsChange={onSaved} />
+                            <OrderItems orderId={internalOrderId} onItemsChange={onSaved} />
                         </TabsContent>
                         <TabsContent value="notite" className="m-0 flex flex-col gap-4">
-                            <OrderNotes orderId={orderId} />
+                            <OrderNotes orderId={internalOrderId} />
                         </TabsContent>
                     </main>
                 </Tabs>
-                <OrderFooter orderId={orderId} />
+                <OrderFooter orderId={internalOrderId} />
             </SheetContent>
         </Sheet>
     );

@@ -27,7 +27,7 @@ interface CustomerFull {
     telefon: string;
 }
 
-export default function OrderCustomer({ orderId }: { orderId?: number | null }) {
+export default function OrderCustomer({ orderId, onOrderCreated }: { orderId?: number | null, onOrderCreated?: (orderId: number) => void }) {
     const [customers, setCustomers] = useState<CustomerFull[]>([]);
     const [search, setSearch] = useState("");
     const [filteredCustomers, setFilteredCustomers] = useState<CustomerFull[]>([]);
@@ -97,8 +97,23 @@ export default function OrderCustomer({ orderId }: { orderId?: number | null }) 
     // Update order's customer
     const handleCustomerChange = async (customerId: string) => {
         setSelectedCustomerId(customerId);
-        if (!orderId) return;
         const supabase = createClient();
+        if (!orderId) {
+            // Create new order with status 'noua' and selected customer
+            const { data, error } = await supabase
+                .from("orders")
+                .insert({ status: "noua", customer_id: customerId, data_comanda: new Date().toISOString() })
+                .select("id")
+                .single();
+            if (error) {
+                toast.error("Eroare la crearea comenzii: " + error.message);
+                return;
+            }
+            if (data && onOrderCreated) {
+                onOrderCreated(data.id);
+            }
+            return;
+        }
         const { error } = await supabase
             .from("orders")
             .update({ customer_id: customerId })

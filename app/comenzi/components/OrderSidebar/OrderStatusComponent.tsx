@@ -23,7 +23,7 @@ interface OrderStatusType {
 
 export default function OrderStatusComponent({ orderId }: { orderId?: number | null }) {
     const [statuses, setStatuses] = useState<OrderStatusType[]>([]);
-    const [status, setStatus] = useState<string>("");
+    const [status, setStatus] = useState<string>(orderId ? "" : "noua");
     const [urgent, setUrgent] = useState<boolean>(false);
     const [updating, setUpdating] = useState(false);
     // Fetch statuses
@@ -41,7 +41,7 @@ export default function OrderStatusComponent({ orderId }: { orderId?: number | n
     // Fetch order status/urgent
     useEffect(() => {
         if (!orderId) {
-            setStatus("");
+            setStatus("noua");
             setUrgent(false);
             return;
         }
@@ -53,7 +53,7 @@ export default function OrderStatusComponent({ orderId }: { orderId?: number | n
                 .eq("id", orderId)
                 .single();
             if (data) {
-                setStatus(data.status || "");
+                setStatus(data.status || "noua");
                 setUrgent(data.urgent || false);
             }
         };
